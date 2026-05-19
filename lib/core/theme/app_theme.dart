@@ -297,6 +297,34 @@ class AppTheme {
           ),
         ),
 
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: NeuColors.goldAccent,
+            textStyle: AppTypography.button.copyWith(
+              color: NeuColors.goldAccent,
+            ),
+            padding: AppSpacing.button,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.button,
+            ),
+          ),
+        ),
+
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: NeuColors.textPrimaryDark,
+            side: const BorderSide(color: NeuColors.borderDark, width: 1.5),
+            textStyle: AppTypography.button.copyWith(
+              color: NeuColors.textPrimaryDark,
+            ),
+            padding: AppSpacing.button,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.button,
+            ),
+            minimumSize: const Size(double.infinity, 52),
+          ),
+        ),
+
         inputDecorationTheme: InputDecorationTheme(
           filled: false,
           contentPadding: AppSpacing.input,

@@ -82,16 +82,24 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(
+            Icons.close_rounded,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('إضافة مهمة جديدة', style: AppTypography.h3),
+        title: Text(
+          'إضافة مهمة جديدة', 
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+        ),
         centerTitle: true,
       ),
       body: Directionality(
@@ -139,9 +147,16 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       margin: EdgeInsets.zero, radius: 16,
                       padding: const EdgeInsets.all(12),
                       child: Row(children: [
-                        const Icon(Icons.calendar_today_rounded, size: 18, color: NeuColors.navyMid),
+                        Icon(
+                          Icons.calendar_today_rounded, 
+                          size: 18, 
+                          color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                        ),
                         AppSpacing.gapHSm,
-                        Text(DateFormat('d MMM yyyy', 'ar').format(_selectedDate), style: AppTypography.body),
+                        Text(
+                          DateFormat('d MMM yyyy', 'ar').format(_selectedDate), 
+                          style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                        ),
                       ]),
                     ),
                   ),
@@ -150,7 +165,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               AppSpacing.gapLg,
 
               // Priority
-              Text('الأولوية', style: AppTypography.label),
+              Text(
+                'الأولوية', 
+                style: isDark ? AppTypography.labelDark : AppTypography.label,
+              ),
               AppSpacing.gapSm,
               Row(children: Priority.values.map((p) {
                 final colors = {
@@ -160,6 +178,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   Priority.low: NeuColors.priorityLow,
                 };
                 final c = colors[p]!;
+                final selected = _selectedPriority == p;
                 return Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _selectedPriority = p),
@@ -167,11 +186,25 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       margin: const EdgeInsetsDirectional.only(end: 8),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: _selectedPriority == p ? c.withValues(alpha: 0.15) : NeuColors.surface,
+                        color: selected 
+                            ? c.withValues(alpha: 0.15) 
+                            : (isDark ? NeuColors.surfaceDark : NeuColors.surface),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _selectedPriority == p ? c : Colors.transparent, width: 1.5),
+                        border: Border.all(
+                          color: selected ? c : Colors.transparent, 
+                          width: 1.5,
+                        ),
                       ),
-                      child: Text(p.arabicLabel, style: AppTypography.caption.copyWith(color: _selectedPriority == p ? c : NeuColors.textHint, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+                      child: Text(
+                        p.arabicLabel, 
+                        style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                          color: selected 
+                              ? c 
+                              : (isDark ? NeuColors.textHintDark : NeuColors.textHint), 
+                          fontWeight: FontWeight.w600,
+                        ), 
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 );

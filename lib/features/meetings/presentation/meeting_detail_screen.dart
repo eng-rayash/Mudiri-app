@@ -21,27 +21,40 @@ class MeetingDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final meetingState = ref.watch(meetingDetailProvider(meetingId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('تفاصيل الاجتماع', style: AppTypography.h3),
+        title: Text(
+          'تفاصيل الاجتماع',
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+        ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_rounded), 
+            icon: Icon(
+              Icons.edit_rounded,
+              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+            ), 
             onPressed: meetingState.valueOrNull != null 
                 ? () => context.push(RouteNames.meetingEditPath(meetingId)) 
                 : null,
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded), 
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+            ), 
             onPressed: meetingState.valueOrNull != null 
                 ? () => _showMoreOptions(context, ref, meetingState.valueOrNull!) 
                 : null,
@@ -52,10 +65,10 @@ class MeetingDetailScreen extends ConsumerWidget {
         textDirection: TextDirection.rtl,
         child: meetingState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('خطأ: $err')),
+          error: (err, _) => Center(child: Text('خطأ: $err', style: isDark ? AppTypography.bodyDark : AppTypography.body)),
           data: (meeting) {
             if (meeting == null) {
-              return const Center(child: Text('الاجتماع غير موجود أو تم حذفه', style: AppTypography.body));
+              return Center(child: Text('الاجتماع غير موجود أو تم حذفه', style: isDark ? AppTypography.bodyDark : AppTypography.body));
             }
 
             final status = MeetingStatus.fromValue(meeting.status);
@@ -72,16 +85,22 @@ class MeetingDetailScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text(meeting.title, style: AppTypography.h3)),
+                          Expanded(
+                            child: Text(
+                              meeting.title, 
+                              style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+                            ),
+                          ),
                           _buildStatusBadge(status),
                         ],
                       ),
                       AppSpacing.gapMd,
-                      _buildInfoRow(Icons.calendar_today_rounded, 'التاريخ', meeting.date),
+                      _buildInfoRow(context, Icons.calendar_today_rounded, 'التاريخ', meeting.date),
                       AppSpacing.gapSm,
-                      _buildInfoRow(Icons.access_time_rounded, 'الوقت', meeting.time),
+                      _buildInfoRow(context, Icons.access_time_rounded, 'الوقت', meeting.time),
                       AppSpacing.gapSm,
                       _buildInfoRow(
+                        context,
                         Icons.location_on_outlined, 
                         'المكان', 
                         meeting.location?.isNotEmpty == true ? meeting.location! : 'غير محدد'
@@ -97,9 +116,14 @@ class MeetingDetailScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('هدف الاجتماع', style: AppTypography.h4),
+                        Text('هدف الاجتماع', style: isDark ? AppTypography.h4Dark : AppTypography.h4),
                         AppSpacing.gapSm,
-                        Text(meeting.objective!, style: AppTypography.body.copyWith(color: NeuColors.textSecondary)),
+                        Text(
+                          meeting.objective!, 
+                          style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                            color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -112,9 +136,14 @@ class MeetingDetailScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('ملاحظات', style: AppTypography.h4),
+                        Text('ملاحظات', style: isDark ? AppTypography.h4Dark : AppTypography.h4),
                         AppSpacing.gapSm,
-                        Text(meeting.notes!, style: AppTypography.body.copyWith(color: NeuColors.textSecondary)),
+                        Text(
+                          meeting.notes!, 
+                          style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                            color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -126,9 +155,14 @@ class MeetingDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('جدول الأعمال والقرارات', style: AppTypography.h4),
+                      Text('جدول الأعمال والقرارات', style: isDark ? AppTypography.h4Dark : AppTypography.h4),
                       AppSpacing.gapSm,
-                      Text('سيتم إضافة جدول الأعمال والقرارات في المرحلة القادمة.', style: AppTypography.body.copyWith(color: NeuColors.textHint)),
+                      Text(
+                        'سيتم إضافة جدول الأعمال والقرارات في المرحلة القادمة.', 
+                        style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                          color: isDark ? NeuColors.textHintDark : NeuColors.textHint,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -154,21 +188,35 @@ class MeetingDetailScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon, size: 18, color: NeuColors.navyMid),
+        Icon(
+          icon, 
+          size: 18, 
+          color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+        ),
         AppSpacing.gapHSm,
-        Text('$label: ', style: AppTypography.label),
-        Expanded(child: Text(value, style: AppTypography.body)),
+        Text(
+          '$label: ', 
+          style: isDark ? AppTypography.labelDark : AppTypography.label,
+        ),
+        Expanded(
+          child: Text(
+            value, 
+            style: isDark ? AppTypography.bodyDark : AppTypography.body,
+          ),
+        ),
       ],
     );
   }
 
   void _showMoreOptions(BuildContext context, WidgetRef ref, dynamic meeting) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -179,7 +227,10 @@ class MeetingDetailScreen extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.check_circle_outline, color: NeuColors.success),
-                title: const Text('تحديد كمكتمل', style: AppTypography.body),
+                title: Text(
+                  'تحديد كمكتمل', 
+                  style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                ),
                 onTap: () {
                   ref.read(meetingsRepositoryProvider).updateStatus(meetingId, MeetingStatus.completed);
                   ctx.pop();
@@ -188,7 +239,10 @@ class MeetingDetailScreen extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.cancel_outlined, color: NeuColors.warning),
-                title: const Text('إلغاء الاجتماع', style: AppTypography.body),
+                title: Text(
+                  'إلغاء الاجتماع', 
+                  style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                ),
                 onTap: () {
                   ref.read(meetingsRepositoryProvider).updateStatus(meetingId, MeetingStatus.cancelled);
                   ctx.pop();
@@ -198,7 +252,13 @@ class MeetingDetailScreen extends ConsumerWidget {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete_outline_rounded, color: NeuColors.danger),
-                title: const Text('حذف الاجتماع', style: TextStyle(color: NeuColors.danger, fontWeight: FontWeight.bold)),
+                title: Text(
+                  'حذف الاجتماع', 
+                  style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                    color: NeuColors.danger, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 onTap: () {
                   ctx.pop();
                   _confirmDelete(context, ref);
@@ -212,16 +272,32 @@ class MeetingDetailScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: NeuColors.bgColor,
-          title: const Text('حذف الاجتماع', style: AppTypography.h3),
-          content: const Text('هل أنت متأكد من رغبتك في حذف هذا الاجتماع نهائياً؟', style: AppTypography.body),
+          backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+          title: Text(
+            'حذف الاجتماع', 
+            style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+          ),
+          content: Text(
+            'هل أنت متأكد من رغبتك في حذف هذا الاجتماع نهائياً؟', 
+            style: isDark ? AppTypography.bodyDark : AppTypography.body,
+          ),
           actions: [
-            TextButton(onPressed: () => ctx.pop(), child: const Text('تراجع')),
+            TextButton(
+              onPressed: () => ctx.pop(), 
+              child: Text(
+                'تراجع',
+                style: TextStyle(
+                  color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                  fontFamily: AppTypography.fontFamilyBody,
+                ),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 ref.read(meetingsRepositoryProvider).deleteMeeting(meetingId);

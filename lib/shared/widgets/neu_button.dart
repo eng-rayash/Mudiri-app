@@ -118,8 +118,8 @@ class _NeuButtonState extends State<NeuButton> {
         ),
       NeuButtonVariant.secondary => (
           isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
-          NeuColors.navyDeep,
-          NeuColors.navyDeep,
+          isDark ? NeuColors.textPrimaryDark : NeuColors.navyDeep,
+          isDark ? NeuColors.textPrimaryDark : NeuColors.navyDeep,
         ),
       NeuButtonVariant.danger => (
           NeuColors.danger,

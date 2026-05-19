@@ -111,26 +111,33 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskDetailProvider(widget.taskId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(
+            Icons.close_rounded,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('تعديل المهمة', style: AppTypography.h3),
+        title: Text(
+          'تعديل المهمة', 
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+        ),
         centerTitle: true,
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: taskState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('خطأ: $err')),
+          error: (err, _) => Center(child: Text('خطأ: $err', style: isDark ? AppTypography.bodyDark : AppTypography.body)),
           data: (task) {
-            if (task == null) return const Center(child: Text('المهمة غير موجودة'));
+            if (task == null) return Center(child: Text('المهمة غير موجودة', style: isDark ? AppTypography.bodyDark : AppTypography.body));
             
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() => _initData(task));
@@ -174,9 +181,16 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           margin: EdgeInsets.zero, radius: 16,
                           padding: const EdgeInsets.all(12),
                           child: Row(children: [
-                            const Icon(Icons.calendar_today_rounded, size: 18, color: NeuColors.navyMid),
+                            Icon(
+                              Icons.calendar_today_rounded, 
+                              size: 18, 
+                              color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                            ),
                             AppSpacing.gapHSm,
-                            Text(_selectedDate != null ? DateFormat('d MMM yyyy', 'ar').format(_selectedDate!) : 'حدد التاريخ', style: AppTypography.body),
+                            Text(
+                              _selectedDate != null ? DateFormat('d MMM yyyy', 'ar').format(_selectedDate!) : 'حدد التاريخ', 
+                              style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                            ),
                           ]),
                         ),
                       ),
@@ -184,7 +198,10 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                   ]),
                   AppSpacing.gapLg,
 
-                  Text('الأولوية', style: AppTypography.label),
+                  Text(
+                    'الأولوية', 
+                    style: isDark ? AppTypography.labelDark : AppTypography.label,
+                  ),
                   AppSpacing.gapSm,
                   Row(children: Priority.values.map((p) {
                     final colors = {
@@ -194,6 +211,7 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                       Priority.low: NeuColors.priorityLow,
                     };
                     final c = colors[p]!;
+                    final selected = _selectedPriority == p;
                     return Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedPriority = p),
@@ -201,11 +219,25 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           margin: const EdgeInsetsDirectional.only(end: 8),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: _selectedPriority == p ? c.withValues(alpha: 0.15) : NeuColors.surface,
+                            color: selected 
+                                ? c.withValues(alpha: 0.15) 
+                                : (isDark ? NeuColors.surfaceDark : NeuColors.surface),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: _selectedPriority == p ? c : Colors.transparent, width: 1.5),
+                            border: Border.all(
+                              color: selected ? c : Colors.transparent, 
+                              width: 1.5,
+                            ),
                           ),
-                          child: Text(p.arabicLabel, style: AppTypography.caption.copyWith(color: _selectedPriority == p ? c : NeuColors.textHint, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+                          child: Text(
+                            p.arabicLabel, 
+                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                              color: selected 
+                                  ? c 
+                                  : (isDark ? NeuColors.textHintDark : NeuColors.textHint), 
+                              fontWeight: FontWeight.w600,
+                            ), 
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     );

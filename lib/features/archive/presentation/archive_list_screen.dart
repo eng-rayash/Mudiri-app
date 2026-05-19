@@ -29,6 +29,7 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // If search query is empty, watch all, else watch search
     final archiveAsync = _searchQuery.isEmpty 
         ? ref.watch(archiveListProvider)
@@ -38,15 +39,15 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
     // and a dependent Future/StreamProvider. For now, we will just filter the data locally for UI speed.
 
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: const Text('الأرشيف', style: AppTypography.h3),
+        title: Text('الأرشيف', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -62,7 +63,7 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                   hintText: 'ابحث بالاسم أو الرقم المرجعي...',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor: NeuColors.surface,
+                  fillColor: isDark ? NeuColors.surfaceDark : NeuColors.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -85,7 +86,7 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                     return Center(
                       child: Text(
                         'لا توجد وثائق مؤرشفة مطابقة',
-                        style: AppTypography.body.copyWith(color: NeuColors.textHint),
+                        style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(color: isDark ? NeuColors.textHintDark : NeuColors.textHint),
                       ),
                     );
                   }
@@ -106,13 +107,13 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: doc.isConfidential 
-                                      ? NeuColors.priorityCritical.withValues(alpha: 0.1) 
-                                      : NeuColors.navyMid.withValues(alpha: 0.1),
+                                      ? (isDark ? NeuColors.priorityCritical.withValues(alpha: 0.2) : NeuColors.priorityCritical.withValues(alpha: 0.1))
+                                      : (isDark ? NeuColors.goldAccent.withValues(alpha: 0.2) : NeuColors.navyMid.withValues(alpha: 0.1)),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
                                   doc.isConfidential ? Icons.lock_rounded : Icons.folder_rounded,
-                                  color: doc.isConfidential ? NeuColors.priorityCritical : NeuColors.navyDeep,
+                                  color: doc.isConfidential ? NeuColors.priorityCritical : (isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -122,7 +123,7 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                                   children: [
                                     Text(
                                       doc.title,
-                                      style: AppTypography.h3.copyWith(fontSize: 16),
+                                      style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(fontSize: 16),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -130,20 +131,20 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                                     Row(
                                       children: [
                                         if (doc.referenceNumber != null && doc.referenceNumber!.isNotEmpty) ...[
-                                          const Icon(Icons.tag_rounded, size: 14, color: NeuColors.textHint),
+                                          Icon(Icons.tag_rounded, size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.textHint),
                                           const SizedBox(width: 4),
                                           Text(
                                             doc.referenceNumber!,
-                                            style: AppTypography.caption,
+                                            style: isDark ? AppTypography.captionDark : AppTypography.caption,
                                           ),
                                           const SizedBox(width: 12),
                                         ],
                                         if (doc.documentDate != null && doc.documentDate!.isNotEmpty) ...[
-                                          const Icon(Icons.calendar_today_rounded, size: 14, color: NeuColors.textHint),
+                                          Icon(Icons.calendar_today_rounded, size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.textHint),
                                           const SizedBox(width: 4),
                                           Text(
                                             doc.documentDate!,
-                                            style: AppTypography.caption,
+                                            style: isDark ? AppTypography.captionDark : AppTypography.caption,
                                           ),
                                         ],
                                       ],

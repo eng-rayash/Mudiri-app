@@ -77,16 +77,17 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: const Text('أرشفة وثيقة', style: AppTypography.h3),
+        title: Text('أرشفة وثيقة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -149,9 +150,9 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                         Icon(Icons.lock_rounded, 
                           color: _isConfidential ? NeuColors.priorityCritical : NeuColors.textHint),
                         const SizedBox(width: 12),
-                        const Text(
+                        Text(
                           'وثيقة سريّة',
-                          style: AppTypography.body,
+                          style: isDark ? AppTypography.bodyDark : AppTypography.body,
                         ),
                       ],
                     ),

@@ -21,27 +21,40 @@ class TaskDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final taskState = ref.watch(taskDetailProvider(taskId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('تفاصيل المهمة', style: AppTypography.h3),
+        title: Text(
+          'تفاصيل المهمة',
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+        ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_rounded),
+            icon: Icon(
+              Icons.edit_rounded,
+              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+            ),
             onPressed: taskState.valueOrNull != null
                 ? () => context.push(RouteNames.taskEditPath(taskId))
                 : null,
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+            ),
             onPressed: taskState.valueOrNull != null
                 ? () => _showMoreOptions(context, ref, taskState.valueOrNull!)
                 : null,
@@ -52,10 +65,10 @@ class TaskDetailScreen extends ConsumerWidget {
         textDirection: TextDirection.rtl,
         child: taskState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('خطأ: $err')),
+          error: (err, _) => Center(child: Text('خطأ: $err', style: isDark ? AppTypography.bodyDark : AppTypography.body)),
           data: (task) {
             if (task == null) {
-              return const Center(child: Text('المهمة غير موجودة أو تم حذفها', style: AppTypography.body));
+              return Center(child: Text('المهمة غير موجودة أو تم حذفها', style: isDark ? AppTypography.bodyDark : AppTypography.body));
             }
 
             final status = UnifiedStatus.fromValue(task.status);
@@ -76,9 +89,11 @@ class TaskDetailScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               task.title,
-                              style: AppTypography.h3.copyWith(
+                              style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
                                 decoration: status == UnifiedStatus.completed ? TextDecoration.lineThrough : null,
-                                color: status == UnifiedStatus.completed ? NeuColors.textSecondary : null,
+                                color: status == UnifiedStatus.completed 
+                                    ? (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary) 
+                                    : (isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
                               ),
                             ),
                           ),
@@ -87,14 +102,14 @@ class TaskDetailScreen extends ConsumerWidget {
                         ],
                       ),
                       AppSpacing.gapMd,
-                      _buildInfoRow(Icons.info_outline_rounded, 'الحالة', status.arabicLabel),
+                      _buildInfoRow(context, Icons.info_outline_rounded, 'الحالة', status.arabicLabel),
                       if (task.dueDate?.isNotEmpty == true) ...[
                         AppSpacing.gapSm,
-                        _buildInfoRow(Icons.calendar_today_rounded, 'تاريخ التسليم', task.dueDate!),
+                        _buildInfoRow(context, Icons.calendar_today_rounded, 'تاريخ التسليم', task.dueDate!),
                       ],
                       if (task.assignedTo?.isNotEmpty == true) ...[
                         AppSpacing.gapSm,
-                        _buildInfoRow(Icons.person_outline_rounded, 'المسؤول', task.assignedTo!),
+                        _buildInfoRow(context, Icons.person_outline_rounded, 'المسؤول', task.assignedTo!),
                       ],
                     ],
                   ),
@@ -106,9 +121,14 @@ class TaskDetailScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('الوصف', style: AppTypography.h4),
+                        Text('الوصف', style: isDark ? AppTypography.h4Dark : AppTypography.h4),
                         AppSpacing.gapSm,
-                        Text(task.description!, style: AppTypography.body.copyWith(color: NeuColors.textSecondary)),
+                        Text(
+                          task.description!, 
+                          style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                            color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -140,21 +160,35 @@ class TaskDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon, size: 18, color: NeuColors.navyMid),
+        Icon(
+          icon, 
+          size: 18, 
+          color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+        ),
         AppSpacing.gapHSm,
-        Text('$label: ', style: AppTypography.label),
-        Expanded(child: Text(value, style: AppTypography.body)),
+        Text(
+          '$label: ', 
+          style: isDark ? AppTypography.labelDark : AppTypography.label,
+        ),
+        Expanded(
+          child: Text(
+            value, 
+            style: isDark ? AppTypography.bodyDark : AppTypography.body,
+          ),
+        ),
       ],
     );
   }
 
   void _showMoreOptions(BuildContext context, WidgetRef ref, dynamic task) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -165,7 +199,10 @@ class TaskDetailScreen extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.undo_rounded, color: NeuColors.warning),
-                title: const Text('إعادة فتح المهمة', style: AppTypography.body),
+                title: Text(
+                  'إعادة فتح المهمة', 
+                  style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                ),
                 onTap: () {
                   ref.read(tasksRepositoryProvider).updateStatus(taskId, UnifiedStatus.inProgress);
                   ctx.pop();
@@ -174,7 +211,13 @@ class TaskDetailScreen extends ConsumerWidget {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete_outline_rounded, color: NeuColors.danger),
-                title: const Text('حذف المهمة', style: TextStyle(color: NeuColors.danger, fontWeight: FontWeight.bold)),
+                title: Text(
+                  'حذف المهمة', 
+                  style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                    color: NeuColors.danger, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 onTap: () {
                   ctx.pop();
                   _confirmDelete(context, ref);
@@ -188,16 +231,32 @@ class TaskDetailScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: NeuColors.bgColor,
-          title: const Text('حذف المهمة', style: AppTypography.h3),
-          content: const Text('هل أنت متأكد من رغبتك في حذف هذه المهمة نهائياً؟', style: AppTypography.body),
+          backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+          title: Text(
+            'حذف المهمة', 
+            style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+          ),
+          content: Text(
+            'هل أنت متأكد من رغبتك في حذف هذه المهمة نهائياً؟', 
+            style: isDark ? AppTypography.bodyDark : AppTypography.body,
+          ),
           actions: [
-            TextButton(onPressed: () => ctx.pop(), child: const Text('تراجع')),
+            TextButton(
+              onPressed: () => ctx.pop(), 
+              child: Text(
+                'تراجع',
+                style: TextStyle(
+                  color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                  fontFamily: AppTypography.fontFamilyBody,
+                ),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 ref.read(tasksRepositoryProvider).deleteTask(taskId);

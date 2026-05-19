@@ -95,16 +95,17 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor: NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: const Text('موعد جديد', style: AppTypography.h3),
+        title: Text('موعد جديد', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -136,9 +137,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded, size: 18, color: NeuColors.navyMid),
+                            Icon(Icons.calendar_today_rounded, size: 18, color: isDark ? NeuColors.goldAccent : NeuColors.navyMid),
                             AppSpacing.gapHSm,
-                            Text(DateFormat('d MMM yyyy', 'ar').format(_selectedDate), style: AppTypography.body),
+                            Text(DateFormat('d MMM yyyy', 'ar').format(_selectedDate), style: isDark ? AppTypography.bodyDark : AppTypography.body),
                           ],
                         ),
                       ),
@@ -154,9 +155,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            const Icon(Icons.access_time_rounded, size: 18, color: NeuColors.navyMid),
+                            Icon(Icons.access_time_rounded, size: 18, color: isDark ? NeuColors.goldAccent : NeuColors.navyMid),
                             AppSpacing.gapHSm,
-                            Text(_selectedTime.format(context), style: AppTypography.body),
+                            Text(_selectedTime.format(context), style: isDark ? AppTypography.bodyDark : AppTypography.body),
                           ],
                         ),
                       ),

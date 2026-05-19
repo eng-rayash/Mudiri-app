@@ -116,18 +116,18 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: NeuColors.bgColor,
+          backgroundColor: Theme.of(ctx).brightness == Brightness.dark ? NeuColors.bgColorDark : NeuColors.bgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          title: const Text(
+          title: Text(
             'تفعيل البصمة',
-            style: AppTypography.h3,
+            style: Theme.of(ctx).brightness == Brightness.dark ? AppTypography.h3Dark : AppTypography.h3,
             textAlign: TextAlign.center,
           ),
-          content: const Text(
+          content: Text(
             'هل تريد استخدام البصمة للدخول السريع؟',
-            style: AppTypography.body,
+            style: Theme.of(ctx).brightness == Brightness.dark ? AppTypography.bodyDark : AppTypography.body,
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -136,8 +136,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               onPressed: () => Navigator.of(ctx).pop(false),
               child: Text(
                 'لاحقًا',
-                style: AppTypography.body.copyWith(
-                  color: NeuColors.textSecondary,
+                style: (Theme.of(ctx).brightness == Brightness.dark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                  color: Theme.of(ctx).brightness == Brightness.dark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
                 ),
               ),
             ),
@@ -165,10 +165,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentPin = _isConfirming ? _confirmPin : _pin;
 
     return Scaffold(
-      backgroundColor: NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       body: SafeArea(
         child: Directionality(
           textDirection: TextDirection.rtl,
@@ -179,22 +180,22 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               // Title
               Text(
                 _isConfirming ? 'تأكيد الرمز' : 'إنشاء رمز الدخول',
-                style: AppTypography.h2,
+                style: isDark ? AppTypography.h2Dark : AppTypography.h2,
               ),
               AppSpacing.gapMd,
               Text(
                 _isConfirming
                     ? 'أعد إدخال الرمز للتأكيد'
                     : 'أدخل رمزًا مكونًا من ٦ أرقام',
-                style: AppTypography.body.copyWith(
-                  color: NeuColors.textSecondary,
+                style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                  color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
                 ),
               ),
 
               AppSpacing.gapXxxl,
 
               // PIN Dots
-              _buildPinDots(currentPin),
+              _buildPinDots(currentPin, isDark),
 
               // Error message
               if (_hasError) ...[
@@ -210,7 +211,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               const Spacer(flex: 1),
 
               // Number Pad
-              _buildNumberPad(),
+              _buildNumberPad(isDark),
 
               const Spacer(flex: 1),
             ],
@@ -220,7 +221,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     );
   }
 
-  Widget _buildPinDots(String currentPin) {
+  Widget _buildPinDots(String currentPin, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(AppConstants.pinLength, (index) {
@@ -234,11 +235,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             shape: BoxShape.circle,
             color: _hasError
                 ? NeuColors.danger
-                : (isFilled ? NeuColors.navyDeep : Colors.transparent),
+                : (isFilled ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep) : Colors.transparent),
             border: Border.all(
               color: _hasError
                   ? NeuColors.danger
-                  : (isFilled ? NeuColors.navyDeep : NeuColors.shadowDark),
+                  : (isFilled ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep) : (isDark ? NeuColors.shadowLightDark : NeuColors.shadowDark)),
               width: 2,
             ),
           ),
@@ -247,16 +248,16 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     );
   }
 
-  Widget _buildNumberPad() {
+  Widget _buildNumberPad(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 48),
       child: Column(
         children: [
-          _buildNumberRow([1, 2, 3]),
+          _buildNumberRow([1, 2, 3], isDark),
           AppSpacing.gapMd,
-          _buildNumberRow([4, 5, 6]),
+          _buildNumberRow([4, 5, 6], isDark),
           AppSpacing.gapMd,
-          _buildNumberRow([7, 8, 9]),
+          _buildNumberRow([7, 8, 9], isDark),
           AppSpacing.gapMd,
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -264,9 +265,9 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               // Empty space
               const SizedBox(width: 72, height: 72),
               // Zero
-              _buildNumberButton(0),
+              _buildNumberButton(0, isDark),
               // Delete
-              _buildDeleteButton(),
+              _buildDeleteButton(isDark),
             ],
           ),
         ],
@@ -274,24 +275,24 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     );
   }
 
-  Widget _buildNumberRow(List<int> digits) {
+  Widget _buildNumberRow(List<int> digits, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: digits.map(_buildNumberButton).toList(),
+      children: digits.map((d) => _buildNumberButton(d, isDark)).toList(),
     );
   }
 
-  Widget _buildNumberButton(int digit) {
+  Widget _buildNumberButton(int digit, bool isDark) {
     return GestureDetector(
       onTap: () => _onDigitPressed(digit),
       child: Container(
         width: 72,
         height: 72,
-        decoration: NeuDecorations.neuFlatSoft(radius: 36),
+        decoration: NeuDecorations.neuFlatSoft(radius: 36, isDark: isDark),
         child: Center(
           child: Text(
             digit.toString(),
-            style: AppTypography.h2.copyWith(
+            style: (isDark ? AppTypography.h2Dark : AppTypography.h2).copyWith(
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -300,16 +301,16 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     );
   }
 
-  Widget _buildDeleteButton() {
+  Widget _buildDeleteButton(bool isDark) {
     return GestureDetector(
       onTap: _onDeletePressed,
-      child: const SizedBox(
+      child: SizedBox(
         width: 72,
         height: 72,
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: NeuColors.textSecondary,
+            color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
             size: 24,
           ),
         ),

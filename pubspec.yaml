@@ -57,6 +57,7 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   custom_lint: ^0.7.5
   riverpod_lint: ^2.6.3
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -87,3 +88,12 @@ flutter:
           weight: 600
         - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon.png"
+  remove_alpha_ios: true
+  background_color: "#1a2035"
+  adaptive_icon_background: "#1a2035"
+  adaptive_icon_foreground: "assets/icon.png"

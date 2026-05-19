@@ -98,7 +98,7 @@ class NeuInput extends StatelessWidget {
               prefixIcon: prefixIcon != null
                   ? Icon(
                       prefixIcon,
-                      color: NeuColors.textSecondary,
+                      color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
                       size: 20,
                     )
                   : null,
