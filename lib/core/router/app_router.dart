@@ -18,10 +18,14 @@ import '../../features/directives/presentation/pages/directive_detail_page.dart'
 import '../../features/directives/presentation/pages/directives_list_page.dart';
 import '../../features/followups/presentation/create_followup_screen.dart';
 import '../../features/followups/presentation/followups_list_screen.dart';
+import '../../features/meetings/presentation/create_encounter_screen.dart';
 import '../../features/meetings/presentation/create_meeting_screen.dart';
 import '../../features/meetings/presentation/edit_meeting_screen.dart';
 import '../../features/meetings/presentation/meeting_detail_screen.dart';
+import '../../features/meetings/presentation/encounters_list_screen.dart';
 import '../../features/meetings/presentation/meetings_list_screen.dart';
+import '../../features/movements/presentation/create_movement_screen.dart';
+import '../../features/movements/presentation/movements_list_screen.dart';
 import '../../features/notes/presentation/notes_screen.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/tasks/presentation/create_task_screen.dart';
@@ -155,6 +159,22 @@ class AppRouter {
         builder: (context, state) => const NotesScreen(),
       ),
 
+      // ─── Movement Routes ───
+      GoRoute(
+        path: RouteNames.movementsList,
+        builder: (context, state) => const MovementsListScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.movementCreate,
+        builder: (context, state) => const CreateMovementScreen(),
+      ),
+
+      // ─── Encounters Routes ───
+      GoRoute(
+        path: RouteNames.encountersList,
+        builder: (context, state) => const EncountersListScreen(),
+      ),
+
       // ─── Timeline Routes ───
       GoRoute(
         path: RouteNames.timeline,
@@ -177,6 +197,10 @@ class AppRouter {
       GoRoute(
         path: RouteNames.meetingCreate,
         builder: (context, state) => const CreateMeetingScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.encounterCreate,
+        builder: (context, state) => const CreateEncounterScreen(),
       ),
       GoRoute(
         path: RouteNames.meetingDetail,

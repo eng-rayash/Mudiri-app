@@ -49,7 +49,7 @@ class AppConstants {
   // ─────────────────────────────────────────────
 
   static const String dbName = 'mudiri.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   // ─────────────────────────────────────────────
   // Security Log

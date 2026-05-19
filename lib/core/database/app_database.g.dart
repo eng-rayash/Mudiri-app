@@ -10093,6 +10093,724 @@ class NotesCompanion extends UpdateCompanion<NoteItem> {
   }
 }
 
+class $MovementsTable extends Movements
+    with TableInfo<$MovementsTable, Movement> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MovementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
+  @override
+  late final GeneratedColumn<String> syncId = GeneratedColumn<String>(
+    'sync_id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _destinationMeta = const VerificationMeta(
+    'destination',
+  );
+  @override
+  late final GeneratedColumn<String> destination = GeneratedColumn<String>(
+    'destination',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _purposeMeta = const VerificationMeta(
+    'purpose',
+  );
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+    'purpose',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<String> time = GeneratedColumn<String>(
+    'time',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<int> type = GeneratedColumn<int>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    syncId,
+    createdAt,
+    updatedAt,
+    isDeleted,
+    createdBy,
+    destination,
+    purpose,
+    date,
+    time,
+    type,
+    notes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'movements';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Movement> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sync_id')) {
+      context.handle(
+        _syncIdMeta,
+        syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_syncIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('destination')) {
+      context.handle(
+        _destinationMeta,
+        destination.isAcceptableOrUnknown(
+          data['destination']!,
+          _destinationMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_destinationMeta);
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(
+        _purposeMeta,
+        purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta),
+      );
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timeMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Movement map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Movement(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      syncId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      destination: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}destination'],
+      )!,
+      purpose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}purpose'],
+      ),
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}type'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+    );
+  }
+
+  @override
+  $MovementsTable createAlias(String alias) {
+    return $MovementsTable(attachedDatabase, alias);
+  }
+}
+
+class Movement extends DataClass implements Insertable<Movement> {
+  /// Auto-increment primary key
+  final int id;
+
+  /// UUID for future cloud sync
+  final String syncId;
+
+  /// Unix timestamp (milliseconds) of creation
+  final int createdAt;
+
+  /// Unix timestamp (milliseconds) of last update
+  final int updatedAt;
+
+  /// Soft delete flag — records are never hard-deleted
+  final bool isDeleted;
+
+  /// Creator identifier (for multi-user support in the future)
+  final String? createdBy;
+
+  /// Destination or location
+  final String destination;
+
+  /// Purpose of the movement
+  final String? purpose;
+
+  /// Date string (YYYY-MM-DD)
+  final String date;
+
+  /// Time string (HH:MM)
+  final String time;
+
+  /// Movement type: 0 = خروج, 1 = عودة, 2 = مهمة خارجية
+  final int type;
+
+  /// Additional notes
+  final String? notes;
+  const Movement({
+    required this.id,
+    required this.syncId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isDeleted,
+    this.createdBy,
+    required this.destination,
+    this.purpose,
+    required this.date,
+    required this.time,
+    required this.type,
+    this.notes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['sync_id'] = Variable<String>(syncId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    map['destination'] = Variable<String>(destination);
+    if (!nullToAbsent || purpose != null) {
+      map['purpose'] = Variable<String>(purpose);
+    }
+    map['date'] = Variable<String>(date);
+    map['time'] = Variable<String>(time);
+    map['type'] = Variable<int>(type);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  MovementsCompanion toCompanion(bool nullToAbsent) {
+    return MovementsCompanion(
+      id: Value(id),
+      syncId: Value(syncId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isDeleted: Value(isDeleted),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      destination: Value(destination),
+      purpose: purpose == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purpose),
+      date: Value(date),
+      time: Value(time),
+      type: Value(type),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+    );
+  }
+
+  factory Movement.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Movement(
+      id: serializer.fromJson<int>(json['id']),
+      syncId: serializer.fromJson<String>(json['syncId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      destination: serializer.fromJson<String>(json['destination']),
+      purpose: serializer.fromJson<String?>(json['purpose']),
+      date: serializer.fromJson<String>(json['date']),
+      time: serializer.fromJson<String>(json['time']),
+      type: serializer.fromJson<int>(json['type']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'syncId': serializer.toJson<String>(syncId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'destination': serializer.toJson<String>(destination),
+      'purpose': serializer.toJson<String?>(purpose),
+      'date': serializer.toJson<String>(date),
+      'time': serializer.toJson<String>(time),
+      'type': serializer.toJson<int>(type),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  Movement copyWith({
+    int? id,
+    String? syncId,
+    int? createdAt,
+    int? updatedAt,
+    bool? isDeleted,
+    Value<String?> createdBy = const Value.absent(),
+    String? destination,
+    Value<String?> purpose = const Value.absent(),
+    String? date,
+    String? time,
+    int? type,
+    Value<String?> notes = const Value.absent(),
+  }) => Movement(
+    id: id ?? this.id,
+    syncId: syncId ?? this.syncId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    destination: destination ?? this.destination,
+    purpose: purpose.present ? purpose.value : this.purpose,
+    date: date ?? this.date,
+    time: time ?? this.time,
+    type: type ?? this.type,
+    notes: notes.present ? notes.value : this.notes,
+  );
+  Movement copyWithCompanion(MovementsCompanion data) {
+    return Movement(
+      id: data.id.present ? data.id.value : this.id,
+      syncId: data.syncId.present ? data.syncId.value : this.syncId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      destination: data.destination.present
+          ? data.destination.value
+          : this.destination,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
+      date: data.date.present ? data.date.value : this.date,
+      time: data.time.present ? data.time.value : this.time,
+      type: data.type.present ? data.type.value : this.type,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Movement(')
+          ..write('id: $id, ')
+          ..write('syncId: $syncId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('destination: $destination, ')
+          ..write('purpose: $purpose, ')
+          ..write('date: $date, ')
+          ..write('time: $time, ')
+          ..write('type: $type, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    syncId,
+    createdAt,
+    updatedAt,
+    isDeleted,
+    createdBy,
+    destination,
+    purpose,
+    date,
+    time,
+    type,
+    notes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Movement &&
+          other.id == this.id &&
+          other.syncId == this.syncId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.createdBy == this.createdBy &&
+          other.destination == this.destination &&
+          other.purpose == this.purpose &&
+          other.date == this.date &&
+          other.time == this.time &&
+          other.type == this.type &&
+          other.notes == this.notes);
+}
+
+class MovementsCompanion extends UpdateCompanion<Movement> {
+  final Value<int> id;
+  final Value<String> syncId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<String?> createdBy;
+  final Value<String> destination;
+  final Value<String?> purpose;
+  final Value<String> date;
+  final Value<String> time;
+  final Value<int> type;
+  final Value<String?> notes;
+  const MovementsCompanion({
+    this.id = const Value.absent(),
+    this.syncId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.destination = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.date = const Value.absent(),
+    this.time = const Value.absent(),
+    this.type = const Value.absent(),
+    this.notes = const Value.absent(),
+  });
+  MovementsCompanion.insert({
+    this.id = const Value.absent(),
+    required String syncId,
+    required int createdAt,
+    required int updatedAt,
+    this.isDeleted = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    required String destination,
+    this.purpose = const Value.absent(),
+    required String date,
+    required String time,
+    this.type = const Value.absent(),
+    this.notes = const Value.absent(),
+  }) : syncId = Value(syncId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       destination = Value(destination),
+       date = Value(date),
+       time = Value(time);
+  static Insertable<Movement> custom({
+    Expression<int>? id,
+    Expression<String>? syncId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<String>? createdBy,
+    Expression<String>? destination,
+    Expression<String>? purpose,
+    Expression<String>? date,
+    Expression<String>? time,
+    Expression<int>? type,
+    Expression<String>? notes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (syncId != null) 'sync_id': syncId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (createdBy != null) 'created_by': createdBy,
+      if (destination != null) 'destination': destination,
+      if (purpose != null) 'purpose': purpose,
+      if (date != null) 'date': date,
+      if (time != null) 'time': time,
+      if (type != null) 'type': type,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  MovementsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? syncId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<bool>? isDeleted,
+    Value<String?>? createdBy,
+    Value<String>? destination,
+    Value<String?>? purpose,
+    Value<String>? date,
+    Value<String>? time,
+    Value<int>? type,
+    Value<String?>? notes,
+  }) {
+    return MovementsCompanion(
+      id: id ?? this.id,
+      syncId: syncId ?? this.syncId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdBy: createdBy ?? this.createdBy,
+      destination: destination ?? this.destination,
+      purpose: purpose ?? this.purpose,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      type: type ?? this.type,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (destination.present) {
+      map['destination'] = Variable<String>(destination.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<String>(time.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<int>(type.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MovementsCompanion(')
+          ..write('id: $id, ')
+          ..write('syncId: $syncId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('destination: $destination, ')
+          ..write('purpose: $purpose, ')
+          ..write('date: $date, ')
+          ..write('time: $time, ')
+          ..write('type: $type, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10109,6 +10827,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CallsTable calls = $CallsTable(this);
   late final $VisitorsTable visitors = $VisitorsTable(this);
   late final $NotesTable notes = $NotesTable(this);
+  late final $MovementsTable movements = $MovementsTable(this);
   late final UsersDao usersDao = UsersDao(this as AppDatabase);
   late final MeetingsDao meetingsDao = MeetingsDao(this as AppDatabase);
   late final TasksDao tasksDao = TasksDao(this as AppDatabase);
@@ -10128,6 +10847,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CallsDao callsDao = CallsDao(this as AppDatabase);
   late final VisitorsDao visitorsDao = VisitorsDao(this as AppDatabase);
   late final NotesDao notesDao = NotesDao(this as AppDatabase);
+  late final MovementsDao movementsDao = MovementsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10146,6 +10866,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     calls,
     visitors,
     notes,
+    movements,
   ];
 }
 
@@ -14644,6 +15365,329 @@ typedef $$NotesTableProcessedTableManager =
       NoteItem,
       PrefetchHooks Function()
     >;
+typedef $$MovementsTableCreateCompanionBuilder =
+    MovementsCompanion Function({
+      Value<int> id,
+      required String syncId,
+      required int createdAt,
+      required int updatedAt,
+      Value<bool> isDeleted,
+      Value<String?> createdBy,
+      required String destination,
+      Value<String?> purpose,
+      required String date,
+      required String time,
+      Value<int> type,
+      Value<String?> notes,
+    });
+typedef $$MovementsTableUpdateCompanionBuilder =
+    MovementsCompanion Function({
+      Value<int> id,
+      Value<String> syncId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<bool> isDeleted,
+      Value<String?> createdBy,
+      Value<String> destination,
+      Value<String?> purpose,
+      Value<String> date,
+      Value<String> time,
+      Value<int> type,
+      Value<String?> notes,
+    });
+
+class $$MovementsTableFilterComposer
+    extends Composer<_$AppDatabase, $MovementsTable> {
+  $$MovementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncId => $composableBuilder(
+    column: $table.syncId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MovementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MovementsTable> {
+  $$MovementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncId => $composableBuilder(
+    column: $table.syncId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MovementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MovementsTable> {
+  $$MovementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get syncId =>
+      $composableBuilder(column: $table.syncId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
+
+  GeneratedColumn<int> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$MovementsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MovementsTable,
+          Movement,
+          $$MovementsTableFilterComposer,
+          $$MovementsTableOrderingComposer,
+          $$MovementsTableAnnotationComposer,
+          $$MovementsTableCreateCompanionBuilder,
+          $$MovementsTableUpdateCompanionBuilder,
+          (Movement, BaseReferences<_$AppDatabase, $MovementsTable, Movement>),
+          Movement,
+          PrefetchHooks Function()
+        > {
+  $$MovementsTableTableManager(_$AppDatabase db, $MovementsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MovementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MovementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MovementsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> syncId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String> destination = const Value.absent(),
+                Value<String?> purpose = const Value.absent(),
+                Value<String> date = const Value.absent(),
+                Value<String> time = const Value.absent(),
+                Value<int> type = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+              }) => MovementsCompanion(
+                id: id,
+                syncId: syncId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                createdBy: createdBy,
+                destination: destination,
+                purpose: purpose,
+                date: date,
+                time: time,
+                type: type,
+                notes: notes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String syncId,
+                required int createdAt,
+                required int updatedAt,
+                Value<bool> isDeleted = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                required String destination,
+                Value<String?> purpose = const Value.absent(),
+                required String date,
+                required String time,
+                Value<int> type = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+              }) => MovementsCompanion.insert(
+                id: id,
+                syncId: syncId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                createdBy: createdBy,
+                destination: destination,
+                purpose: purpose,
+                date: date,
+                time: time,
+                type: type,
+                notes: notes,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MovementsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MovementsTable,
+      Movement,
+      $$MovementsTableFilterComposer,
+      $$MovementsTableOrderingComposer,
+      $$MovementsTableAnnotationComposer,
+      $$MovementsTableCreateCompanionBuilder,
+      $$MovementsTableUpdateCompanionBuilder,
+      (Movement, BaseReferences<_$AppDatabase, $MovementsTable, Movement>),
+      Movement,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -14674,4 +15718,6 @@ class $AppDatabaseManager {
       $$VisitorsTableTableManager(_db, _db.visitors);
   $$NotesTableTableManager get notes =>
       $$NotesTableTableManager(_db, _db.notes);
+  $$MovementsTableTableManager get movements =>
+      $$MovementsTableTableManager(_db, _db.movements);
 }

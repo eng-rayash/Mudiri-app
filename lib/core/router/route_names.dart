@@ -61,6 +61,9 @@ class RouteNames {
   /// Generate meeting edit path
   static String meetingEditPath(int id) => '/meetings/$id/edit';
 
+  static const String encounterCreate = '/encounters/create';
+  static const String encountersList = '/encounters';
+
   // ─────────────────────────────────────────────
   // Settings & Security
   // ─────────────────────────────────────────────
@@ -88,9 +91,18 @@ class RouteNames {
 
   // Phase 4 Modules
   static const String callsList = '/calls';
+  static const String callCreate = '/calls/create';
   static const String visitorsList = '/visitors';
+  static const String visitorCreate = '/visitors/create';
   static const String notesList = '/notes';
+  static const String noteCreate = '/notes/create';
   static const String timeline = '/timeline';
+
+  // ─────────────────────────────────────────────
+  // Movements Routes
+  // ─────────────────────────────────────────────
+  static const String movementsList = '/movements';
+  static const String movementCreate = '/movements/create';
 
   // ─────────────────────────────────────────────
   // Directives Routes

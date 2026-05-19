@@ -50,6 +50,9 @@ class MeetingsRepository {
     String? location,
     String? objective,
     String? notes,
+    String? attendees,
+    String? agenda,
+    String? decisions,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     
@@ -63,6 +66,9 @@ class MeetingsRepository {
         location: drift.Value(location),
         objective: drift.Value(objective),
         notes: drift.Value(notes),
+        attendees: drift.Value(attendees),
+        agenda: drift.Value(agenda),
+        decisions: drift.Value(decisions),
         priority: drift.Value(priority.value),
         status: drift.Value(MeetingStatus.scheduled.value),
         createdAt: now,

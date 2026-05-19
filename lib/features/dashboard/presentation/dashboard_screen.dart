@@ -11,11 +11,12 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/dashboard_fab.dart';
 
 /// Dashboard Screen — executive command center.
 ///
-/// Displays: Today's summary, quick actions (2 rows of 4),
-/// upcoming meetings, stats overview.
+/// Displays: Today's summary, upcoming meetings, stats overview.
+/// Quick-add actions are accessible via the center FAB.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -28,6 +29,9 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor:
           isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+      floatingActionButton: const DashboardFab(),
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerFloat,
       body: SafeArea(
         child: Directionality(
           textDirection: TextDirection.rtl,
@@ -145,94 +149,6 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Quick Actions — 2 rows of 4
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  child: Column(
-                    children: [
-                      // Row 1: اجتماع، لقاء، موعد، زائر
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildQuickAction(
-                            context,
-                            Icons.groups_rounded,
-                            'اجتماع',
-                            NeuColors.navyDeep,
-                            isDark,
-                            () => context.push(RouteNames.meetingCreate),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.handshake_rounded,
-                            'لقاء',
-                            NeuColors.navyMid,
-                            isDark,
-                            () => context.push(RouteNames.appointmentCreate),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.calendar_month_rounded,
-                            'موعد',
-                            NeuColors.info,
-                            isDark,
-                            () => context.push(RouteNames.appointmentCreate),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.person_add_alt_1_rounded,
-                            'زائر',
-                            NeuColors.success,
-                            isDark,
-                            () => context.push(RouteNames.visitorsList),
-                          ),
-                        ],
-                      ),
-                      AppSpacing.gapMd,
-                      // Row 2: مهمة، توجيه، اتصال، ملاحظة
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildQuickAction(
-                            context,
-                            Icons.task_alt_rounded,
-                            'مهمة',
-                            NeuColors.warning,
-                            isDark,
-                            () => context.push(RouteNames.taskCreate),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.assignment_rounded,
-                            'توجيه',
-                            NeuColors.danger,
-                            isDark,
-                            () => context.push(RouteNames.directiveCreate),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.phone_rounded,
-                            'اتصال',
-                            NeuColors.goldAccent,
-                            isDark,
-                            () => context.push(RouteNames.callsList),
-                          ),
-                          _buildQuickAction(
-                            context,
-                            Icons.note_add_rounded,
-                            'ملاحظة',
-                            NeuColors.navyLight,
-                            isDark,
-                            () => context.push(RouteNames.notesList),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
               // Section: Upcoming Meetings
               SliverToBoxAdapter(
@@ -388,8 +304,8 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Bottom spacing
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              // Bottom spacing (extra for FAB clearance)
+              const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           ),
         ),
@@ -412,38 +328,6 @@ class DashboardScreen extends ConsumerWidget {
               style: isDark
                   ? AppTypography.captionDark
                   : AppTypography.caption),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildQuickAction(
-    BuildContext ctx,
-    IconData icon,
-    String label,
-    Color color,
-    bool isDark,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NeuCard(
-            padding: const EdgeInsets.all(14),
-            margin: EdgeInsets.zero,
-            radius: 16,
-            child: Icon(icon, color: color, size: 24),
-          ),
-          AppSpacing.gapXs,
-          Text(
-            label,
-            style: (isDark
-                    ? AppTypography.captionDark
-                    : AppTypography.caption)
-                .copyWith(fontWeight: FontWeight.w600),
-          ),
         ],
       ),
     );

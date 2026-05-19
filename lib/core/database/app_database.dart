@@ -31,11 +31,13 @@ import 'tables/users_table.dart';
 import 'tables/calls_table.dart';
 import 'tables/visitors_table.dart';
 import 'tables/notes_table.dart';
+import 'tables/movements_table.dart';
 
 // Phase 4 DAOs
 import 'dao/calls_dao.dart';
 import 'dao/visitors_dao.dart';
 import 'dao/notes_dao.dart';
+import 'dao/movements_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -59,6 +61,7 @@ part 'app_database.g.dart';
     Calls,
     Visitors,
     Notes,
+    Movements,
   ],
   daos: [
     UsersDao,
@@ -74,6 +77,7 @@ part 'app_database.g.dart';
     CallsDao,
     VisitorsDao,
     NotesDao,
+    MovementsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -91,11 +95,12 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // Future migrations will be handled here
-          // Example:
-          // if (from < 2) {
-          //   await m.addColumn(meetings, meetings.recurrenceRule);
-          // }
+          if (from < 2) {
+            try { await m.createTable(movements); } catch (_) {}
+            try { await m.createTable(calls); } catch (_) {}
+            try { await m.createTable(visitors); } catch (_) {}
+            try { await m.createTable(notes); } catch (_) {}
+          }
         },
         beforeOpen: (details) async {
           // Enable foreign keys
