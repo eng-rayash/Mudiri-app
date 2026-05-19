@@ -1,0 +1,89 @@
+name: mudiri
+description: "مديري — نظام إدارة تنفيذي احترافي"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Database
+  drift: ^2.22.1
+  sqlite3_flutter_libs: ^0.5.28
+
+  # Security
+  flutter_secure_storage: ^9.2.4
+  local_auth: ^2.3.0
+  crypto: ^3.0.6
+  encrypt: ^5.0.3
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # UI & Fonts
+  google_fonts: ^6.2.1
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # Date & Time
+  flutter_localizations:
+    sdk: flutter
+  share_plus: ^12.0.2
+  file_picker: ^11.0.2
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
+  fl_chart: ^1.2.0
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code Generation
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.3
+  custom_lint: ^0.7.5
+  riverpod_lint: ^2.6.3
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Tajawal-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Tajawal-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Tajawal-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Tajawal-ExtraBold.ttf
+          weight: 800
+
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Light.ttf
+          weight: 300
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700

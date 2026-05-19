@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neu_colors.dart';
+import '../../../shared/widgets/neu_button.dart';
+import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_input.dart';
+import '../domain/appointments_repository.dart';
+
+/// Screen for creating a new appointment
+class CreateAppointmentScreen extends ConsumerStatefulWidget {
+  const CreateAppointmentScreen({super.key});
+
+  @override
+  ConsumerState<CreateAppointmentScreen> createState() => _CreateAppointmentScreenState();
+}
+
+class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _durationController = TextEditingController(text: '30');
+
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _durationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      locale: const Locale('ar'),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
+    if (picked != null) setState(() => _selectedTime = picked);
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repository = ref.read(appointmentsRepositoryProvider);
+      final formattedTime = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+      final duration = int.tryParse(_durationController.text) ?? 30;
+
+      await repository.createAppointment(
+        title: _titleController.text.trim(),
+        date: _selectedDate,
+        time: formattedTime,
+        durationMinutes: duration,
+        location: _locationController.text.trim(),
+      );
+
+      if (mounted) {
+        context.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم جدولة الموعد بنجاح')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: NeuColors.bgColor,
+      appBar: AppBar(
+        backgroundColor: NeuColors.bgColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('موعد جديد', style: AppTypography.h3),
+        centerTitle: true,
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: AppSpacing.screen,
+            children: [
+              NeuInput(
+                controller: _titleController,
+                label: 'عنوان الموعد *',
+                hint: 'أدخل عنوان الموعد',
+                prefixIcon: Icons.title_rounded,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'حقل مطلوب' : null,
+              ),
+              AppSpacing.gapLg,
+
+              // Date & Time Row
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _pickDate,
+                      child: NeuCard(
+                        margin: EdgeInsets.zero,
+                        radius: 16,
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 18, color: NeuColors.navyMid),
+                            AppSpacing.gapHSm,
+                            Text(DateFormat('d MMM yyyy', 'ar').format(_selectedDate), style: AppTypography.body),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  AppSpacing.gapHMd,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _pickTime,
+                      child: NeuCard(
+                        margin: EdgeInsets.zero,
+                        radius: 16,
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 18, color: NeuColors.navyMid),
+                            AppSpacing.gapHSm,
+                            Text(_selectedTime.format(context), style: AppTypography.body),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              AppSpacing.gapLg,
+
+              NeuInput(
+                controller: _durationController,
+                label: 'المدة (بالدقائق)',
+                hint: 'مثال: 30',
+                prefixIcon: Icons.timer_rounded,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty && int.tryParse(value) == null) {
+                    return 'أدخل رقماً صحيحاً';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.gapLg,
+
+              NeuInput(
+                controller: _locationController,
+                label: 'المكان',
+                hint: 'الموقع أو الرابط',
+                prefixIcon: Icons.location_on_outlined,
+              ),
+              AppSpacing.gapXxl,
+              
+              NeuButton(
+                onPressed: _isLoading ? null : _submit,
+                isLoading: _isLoading,
+                label: 'جدولة الموعد',
+                icon: Icons.check_rounded,
+              ),
+              AppSpacing.gapXxl,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

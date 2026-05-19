@@ -1,0 +1,154 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/constants/app_constants.dart';
+import '../../../core/router/route_names.dart';
+import '../../../core/security/auth_service.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neu_colors.dart';
+
+/// Splash Screen — app entry point.
+///
+/// Displays the Mudiri logo for 1.5 seconds, then routes to:
+/// - PIN Setup (first launch)
+/// - Lock Screen (returning user)
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _controller.forward();
+    _navigateAfterDelay();
+  }
+
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(AppConstants.splashDuration);
+    if (!mounted) return;
+
+    final authService = AuthService.instance;
+    final isFirstLaunch = await authService.isFirstLaunch();
+
+    if (!mounted) return;
+
+    if (isFirstLaunch) {
+      context.go(RouteNames.pinSetup);
+    } else {
+      context.go(RouteNames.lock);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: NeuColors.navyDeep,
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Icon
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: NeuColors.bgColor,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'م',
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontFamilyHeading,
+                        fontSize: 48,
+                        fontWeight: FontWeight.w700,
+                        color: NeuColors.navyDeep,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // App Name
+                const Text(
+                  AppConstants.appName,
+                  style: TextStyle(
+                    fontFamily: AppTypography.fontFamilyHeading,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    color: NeuColors.textOnDark,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Tagline
+                Text(
+                  AppConstants.appDescription,
+                  style: TextStyle(
+                    fontFamily: AppTypography.fontFamilyBody,
+                    fontSize: 14,
+                    color: NeuColors.textOnDark.withValues(alpha: 0.7),
+                  ),
+                ),
+
+                const SizedBox(height: 48),
+
+                // Loading indicator
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      NeuColors.goldAccent.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
