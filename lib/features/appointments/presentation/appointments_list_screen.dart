@@ -9,6 +9,8 @@ import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../domain/appointments_repository.dart';
+import '../../../shared/widgets/export_button.dart';
+import '../../reports/domain/export_service.dart';
 
 /// Screen displaying the list of appointments with search & filter.
 class AppointmentsListScreen extends ConsumerStatefulWidget {
@@ -22,6 +24,17 @@ class AppointmentsListScreen extends ConsumerStatefulWidget {
 class _AppointmentsListScreenState
     extends ConsumerState<AppointmentsListScreen> {
   String _searchQuery = '';
+  final Set<int> _selectedIds = {};
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +48,110 @@ class _AppointmentsListScreenState
         backgroundColor:
             isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
-          onPressed: () => context.pop(),
-        ),
-        title: Text('المواعيد',
-            style: isDark ? AppTypography.h3Dark : AppTypography.h3),
-        centerTitle: true,
+        centerTitle: _selectedIds.isEmpty,
+        leading: _selectedIds.isEmpty
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
+                onPressed: () => context.pop(),
+              )
+            : IconButton(
+                icon: Icon(Icons.close_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
+                onPressed: () => setState(() => _selectedIds.clear()),
+              ),
+        title: _selectedIds.isEmpty
+            ? Text('المواعيد',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3)
+            : Text('تم تحديد ${_selectedIds.length}',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        actions: _selectedIds.isEmpty
+            ? null
+            : [
+                appointmentsAsync.when(
+                  loading: () => const SizedBox(),
+                  error: (_, __) => const SizedBox(),
+                  data: (appointments) {
+                    var filtered = appointments.toList();
+                    if (_searchQuery.isNotEmpty) {
+                      final q = _searchQuery.toLowerCase();
+                      filtered = filtered.where((a) {
+                        return a.title.toLowerCase().contains(q) ||
+                            (a.location ?? '').toLowerCase().contains(q) ||
+                            a.date.contains(q) ||
+                            a.time.contains(q);
+                      }).toList();
+                    }
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _selectedIds.length == filtered.length
+                                ? Icons.deselect_rounded
+                                : Icons.select_all_rounded,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              if (_selectedIds.length == filtered.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds.addAll(filtered.map((a) => a.id));
+                              }
+                            });
+                          },
+                        ),
+                        ExportButton(
+                          itemCount: _selectedIds.length,
+                          onExport: (format) {
+                            final selectedItems = filtered
+                                .where((a) => _selectedIds.contains(a.id))
+                                .toList();
+                            selectedItems.sort((a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'));
+                            final exportService = ref.read(exportServiceProvider);
+                            exportService.exportDataList(
+                              context: context,
+                              title: 'مواعيد الإدارة التنفيذية المحددة',
+                              items: selectedItems,
+                              headers: [
+                                'م',
+                                'الموعد / العنوان',
+                                'التاريخ',
+                                'الوقت',
+                                'المدة (دقائق)',
+                                'الموقع / المكان',
+                                'الحالة'
+                              ],
+                              itemMapper: (items) => items.asMap().entries.map((entry) {
+                                final i = entry.key + 1;
+                                final a = entry.value;
+                                String statusStr = 'جديد';
+                                if (a.status == 1) statusStr = 'قيد التنفيذ';
+                                if (a.status == 2) statusStr = 'بانتظار الرد';
+                                if (a.status == 3) statusStr = 'مكتمل';
+                                if (a.status == 4) statusStr = 'متأخر';
+                                if (a.status == 5) statusStr = 'متعثر';
+                                if (a.status == 6) statusStr = 'ملغي';
+                                return [
+                                  i.toString(),
+                                  a.title,
+                                  a.date,
+                                  a.time,
+                                  a.durationMinutes.toString(),
+                                  a.location ?? 'غير محدد',
+                                  statusStr,
+                                ];
+                              }).toList(),
+                              format: format,
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -95,15 +204,43 @@ class _AppointmentsListScreenState
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final appointment = filtered[index];
+                      final isSelected = _selectedIds.contains(appointment.id);
+
                       return Padding(
                         padding:
                             const EdgeInsets.only(bottom: 16),
                         child: NeuCard(
+                          onTap: () {
+                            if (_selectedIds.isNotEmpty) {
+                              _toggleSelection(appointment.id);
+                            } else {
+                              // original had no navigate, so just toggle or detail if supported
+                              _toggleSelection(appointment.id);
+                            }
+                          },
+                          onLongPress: () => _toggleSelection(appointment.id),
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                CrossAxisAlignment.center,
                             children: [
+                              if (_selectedIds.isNotEmpty) ...[
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  color: isSelected
+                                      ? (isDark
+                                          ? NeuColors.goldAccent
+                                          : NeuColors.navyDeep)
+                                      : (isDark
+                                          ? NeuColors.textHintDark
+                                          : NeuColors.textHint),
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              
                               // Time Indicator
                               Container(
                                 padding:
@@ -140,6 +277,7 @@ class _AppointmentsListScreenState
                                 ),
                               ),
                               const SizedBox(width: 16),
+                              
                               // Details
                               Expanded(
                                 child: Column(
@@ -235,13 +373,15 @@ class _AppointmentsListScreenState
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            context.push(RouteNames.appointmentCreate),
-        backgroundColor: NeuColors.navyDeep,
-        child: const Icon(Icons.add_rounded,
-            color: Colors.white),
-      ),
+      floatingActionButton: _selectedIds.isEmpty
+          ? FloatingActionButton(
+              onPressed: () =>
+                  context.push(RouteNames.appointmentCreate),
+              backgroundColor: NeuColors.navyDeep,
+              child: const Icon(Icons.add_rounded,
+                  color: Colors.white),
+            )
+          : null,
     );
   }
 }

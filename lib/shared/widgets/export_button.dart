@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/neu_colors.dart';
+import '../../features/reports/domain/export_service.dart';
 
 
 /// Export Button — shows export format options in a popup.
@@ -62,15 +63,15 @@ class ExportButton extends StatelessWidget {
           isDark,
         ),
         _buildItem(
-          ExportFormat.csv,
+          ExportFormat.excel,
           Icons.table_chart_rounded,
-          'تصدير CSV',
+          'تصدير Excel',
           isDark,
         ),
         _buildItem(
-          ExportFormat.image,
-          Icons.image_rounded,
-          'حفظ كصورة',
+          ExportFormat.pdf,
+          Icons.picture_as_pdf_rounded,
+          'تصدير PDF',
           isDark,
         ),
       ],
@@ -101,11 +102,4 @@ class ExportButton extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Export format options
-enum ExportFormat {
-  text,
-  csv,
-  image,
 }

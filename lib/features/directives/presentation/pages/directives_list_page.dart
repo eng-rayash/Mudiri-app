@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/enums.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/neu_colors.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/search_filter_bar.dart';
+import '../../../../shared/widgets/export_button.dart';
+import '../../../reports/domain/export_service.dart';
 import '../../providers/directives_provider.dart';
 import '../../widgets/directive_card.dart';
 
-/// Directives List — displays all executive directives with search & filter.
+/// Directives List — displays all executive directives with search, filter, multi-select, and export.
 class DirectivesListPage extends ConsumerStatefulWidget {
   const DirectivesListPage({super.key});
 
@@ -23,6 +26,7 @@ class DirectivesListPage extends ConsumerStatefulWidget {
 class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
   String _searchQuery = '';
   String _statusFilter = 'all';
+  final Set<int> _selectedIds = {};
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -31,6 +35,16 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
     FilterOption(label: 'مكتمل', value: '3'),
     FilterOption(label: 'متأخر', value: '4'),
   ];
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,20 +58,123 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
         backgroundColor:
             isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
-        title: Text(
-          'التوجيهات الإدارية',
-          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.add_rounded,
-              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
-            ),
-            onPressed: () => context.push(RouteNames.directiveCreate),
-          ),
-        ],
+        centerTitle: _selectedIds.isEmpty,
+        leading: _selectedIds.isEmpty
+            ? null
+            : IconButton(
+                icon: Icon(Icons.close_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
+                onPressed: () => setState(() => _selectedIds.clear()),
+              ),
+        title: _selectedIds.isEmpty
+            ? Text(
+                'التوجيهات الإدارية',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+              )
+            : Text(
+                'تم تحديد ${_selectedIds.length}',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+              ),
+        actions: _selectedIds.isEmpty
+            ? [
+                IconButton(
+                  icon: Icon(
+                    Icons.add_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                  ),
+                  onPressed: () => context.push(RouteNames.directiveCreate),
+                ),
+              ]
+            : [
+                directivesAsync.when(
+                  loading: () => const SizedBox(),
+                  error: (_, __) => const SizedBox(),
+                  data: (directives) {
+                    var filtered = directives.toList();
+                    // Status filter
+                    if (_statusFilter != 'all') {
+                      final statusVal = int.tryParse(_statusFilter);
+                      if (statusVal != null) {
+                        filtered = filtered
+                            .where((d) => d.status == statusVal)
+                            .toList();
+                      }
+                    }
+                    // Search filter
+                    if (_searchQuery.isNotEmpty) {
+                      final q = _searchQuery.toLowerCase();
+                      filtered = filtered.where((d) {
+                        return d.title.toLowerCase().contains(q) ||
+                            (d.assignedTo ?? '').toLowerCase().contains(q) ||
+                            (d.details ?? '').toLowerCase().contains(q);
+                      }).toList();
+                    }
+
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _selectedIds.length == filtered.length
+                                ? Icons.deselect_rounded
+                                : Icons.select_all_rounded,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              if (_selectedIds.length == filtered.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds.addAll(filtered.map((d) => d.id));
+                              }
+                            });
+                          },
+                        ),
+                        ExportButton(
+                          itemCount: _selectedIds.length,
+                          onExport: (format) {
+                            final selectedItems = filtered
+                                .where((d) => _selectedIds.contains(d.id))
+                                .toList();
+                            selectedItems.sort((a, b) => (a.deadline ?? '').compareTo(b.deadline ?? ''));
+                            final exportService = ref.read(exportServiceProvider);
+                            exportService.exportDataList(
+                              context: context,
+                              title: 'توجيهات الإدارة التنفيذية المحددة',
+                              items: selectedItems,
+                              headers: [
+                                'م',
+                                'التوجيه / العنوان',
+                                'التفاصيل',
+                                'الجهة المصدرة',
+                                'الجهة المكلفة',
+                                'الموعد النهائي',
+                                'الأهمية',
+                                'الحالة'
+                              ],
+                              itemMapper: (items) => items.asMap().entries.map((entry) {
+                                final i = entry.key + 1;
+                                final d = entry.value;
+                                return [
+                                  i.toString(),
+                                  d.title,
+                                  d.details ?? '',
+                                  d.source ?? 'غير محدد',
+                                  d.assignedTo ?? 'غير محدد',
+                                  d.deadline ?? 'غير محدد',
+                                  Priority.fromValue(d.priority).arabicLabel,
+                                  UnifiedStatus.fromValue(d.status).arabicLabel,
+                                ];
+                              }).toList(),
+                              format: format,
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -120,15 +237,18 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                           ? 'لا توجد نتائج مطابقة'
                           : 'لا توجد توجيهات',
                       subtitle: _searchQuery.isEmpty &&
-                              _statusFilter == 'all'
+                              _statusFilter == 'all' &&
+                              _selectedIds.isEmpty
                           ? 'أضف توجيهًا إداريًا جديدًا'
                           : null,
                       actionLabel: _searchQuery.isEmpty &&
-                              _statusFilter == 'all'
+                              _statusFilter == 'all' &&
+                              _selectedIds.isEmpty
                           ? 'إضافة توجيه'
                           : null,
                       onAction: _searchQuery.isEmpty &&
-                              _statusFilter == 'all'
+                              _statusFilter == 'all' &&
+                              _selectedIds.isEmpty
                           ? () => context.push(
                               RouteNames.directiveCreate)
                           : null,
@@ -142,11 +262,43 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                         AppSpacing.gapMd,
                     itemBuilder: (context, index) {
                       final directive = filtered[index];
-                      return DirectiveCard(
-                        directive: directive,
-                        onTap: () => context.push(
-                          RouteNames.directiveDetailPath(
-                              directive.id),
+                      final isSelected = _selectedIds.contains(directive.id);
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (_selectedIds.isNotEmpty) {
+                            _toggleSelection(directive.id);
+                          } else {
+                            context.push(
+                              RouteNames.directiveDetailPath(directive.id),
+                            );
+                          }
+                        },
+                        onLongPress: () => _toggleSelection(directive.id),
+                        child: Row(
+                          children: [
+                            if (_selectedIds.isNotEmpty) ...[
+                              Icon(
+                                isSelected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                color: isSelected
+                                    ? (isDark
+                                        ? NeuColors.goldAccent
+                                        : NeuColors.navyDeep)
+                                    : (isDark
+                                        ? NeuColors.textHintDark
+                                        : NeuColors.textHint),
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: DirectiveCard(
+                                directive: directive,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

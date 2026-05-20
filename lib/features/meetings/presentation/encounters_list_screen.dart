@@ -12,8 +12,10 @@ import '../../../core/constants/enums.dart';
 import '../../meetings/providers/meetings_provider.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/export_button.dart';
+import '../../reports/domain/export_service.dart';
 
-/// Encounters List Screen — اللقاءات
+/// Encounters List Screen — اللقاءات السريعة
 class EncountersListScreen extends ConsumerStatefulWidget {
   const EncountersListScreen({super.key});
 
@@ -23,6 +25,17 @@ class EncountersListScreen extends ConsumerStatefulWidget {
 
 class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
   String _searchQuery = '';
+  final Set<int> _selectedIds = {};
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,27 +47,125 @@ class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
       appBar: AppBar(
         backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'اللقاءات السريعة',
-          style: isDark ? AppTypography.h3Dark : AppTypography.h3,
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_rounded,
-            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
-          ),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.add_circle_outline_rounded,
-              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
-            ),
-            onPressed: () => context.push(RouteNames.encounterCreate),
-          ),
-        ],
+        centerTitle: _selectedIds.isEmpty,
+        title: _selectedIds.isEmpty
+            ? Text(
+                'اللقاءات السريعة',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+              )
+            : Text(
+                'تم تحديد ${_selectedIds.length}',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+              ),
+        leading: _selectedIds.isEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_rounded,
+                  color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                ),
+                onPressed: () => context.pop(),
+              )
+            : IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                ),
+                onPressed: () => setState(() => _selectedIds.clear()),
+              ),
+        actions: _selectedIds.isEmpty
+            ? [
+                IconButton(
+                  icon: Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                  ),
+                  onPressed: () => context.push(RouteNames.encounterCreate),
+                ),
+              ]
+            : [
+                meetingsState.when(
+                  loading: () => const SizedBox(),
+                  error: (_, __) => const SizedBox(),
+                  data: (meetings) {
+                    var filtered = meetings.where((m) => m.meetingType == MeetingType.external_.value).toList();
+                    if (_searchQuery.isNotEmpty) {
+                      final q = _searchQuery.toLowerCase();
+                      filtered = filtered.where((m) {
+                        return m.title.toLowerCase().contains(q) ||
+                            (m.location ?? '').toLowerCase().contains(q) ||
+                            (m.objective ?? '').toLowerCase().contains(q) ||
+                            (m.notes ?? '').toLowerCase().contains(q);
+                      }).toList();
+                    }
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _selectedIds.length == filtered.length
+                                ? Icons.deselect_rounded
+                                : Icons.select_all_rounded,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              if (_selectedIds.length == filtered.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds.addAll(filtered.map((m) => m.id));
+                              }
+                            });
+                          },
+                        ),
+                        ExportButton(
+                          itemCount: _selectedIds.length,
+                          onExport: (format) {
+                            final selectedItems = filtered
+                                .where((m) => _selectedIds.contains(m.id))
+                                .toList();
+                            selectedItems.sort((a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'));
+                            final exportService = ref.read(exportServiceProvider);
+                            exportService.exportDataList(
+                              context: context,
+                              title: 'اللقاءات السريعة المحددة',
+                              items: selectedItems,
+                              headers: [
+                                'م',
+                                'العنوان',
+                                'التاريخ',
+                                'الوقت',
+                                'المكان',
+                                'الحضور',
+                                'التفاصيل',
+                                'المخرجات',
+                                'القرارات',
+                                'الملاحظات'
+                              ],
+                              itemMapper: (items) => items.asMap().entries.map((entry) {
+                                final i = entry.key + 1;
+                                final m = entry.value;
+                                return [
+                                  i.toString(),
+                                  m.title,
+                                  m.date,
+                                  m.time,
+                                  m.location ?? 'غير محدد',
+                                  exportService.decodeJsonArray(m.attendees),
+                                  m.objective ?? '',
+                                  exportService.decodeJsonArray(m.outcomes),
+                                  exportService.decodeJsonArray(m.decisions),
+                                  m.notes ?? '',
+                                ];
+                              }).toList(),
+                              format: format,
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -99,44 +210,70 @@ class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final meeting = filtered[index];
-                      return GestureDetector(
-                        onTap: () => context.push(RouteNames.meetingDetailPath(meeting.id)),
-                        child: NeuCard(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      meeting.title,
-                                      style: isDark ? AppTypography.h4Dark : AppTypography.h4,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  StatusBadge.fromMeetingStatus(meeting.status),
-                                ],
+                      final isSelected = _selectedIds.contains(meeting.id);
+
+                      return NeuCard(
+                        onTap: () {
+                          if (_selectedIds.isNotEmpty) {
+                            _toggleSelection(meeting.id);
+                          } else {
+                            context.push(RouteNames.meetingDetailPath(meeting.id));
+                          }
+                        },
+                        onLongPress: () => _toggleSelection(meeting.id),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (_selectedIds.isNotEmpty) ...[
+                              Icon(
+                                isSelected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                color: isSelected
+                                    ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                                    : (isDark ? NeuColors.textHintDark : NeuColors.textHint),
+                                size: 22,
                               ),
-                              AppSpacing.gapSm,
-                              Row(
-                                children: [
-                                  Icon(Icons.calendar_today_rounded,
-                                      size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.navyMid),
-                                  AppSpacing.gapHSm,
-                                  Text(meeting.date,
-                                      style: isDark ? AppTypography.captionDark : AppTypography.caption),
-                                  AppSpacing.gapHMd,
-                                  Icon(Icons.access_time_rounded,
-                                      size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.navyMid),
-                                  AppSpacing.gapHSm,
-                                  Text(meeting.time,
-                                      style: isDark ? AppTypography.captionDark : AppTypography.caption),
-                                ],
-                              ),
+                              const SizedBox(width: 12),
                             ],
-                          ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          meeting.title,
+                                          style: isDark ? AppTypography.h4Dark : AppTypography.h4,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      StatusBadge.fromMeetingStatus(meeting.status),
+                                    ],
+                                  ),
+                                  AppSpacing.gapSm,
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today_rounded,
+                                          size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.navyMid),
+                                      AppSpacing.gapHSm,
+                                      Text(meeting.date,
+                                          style: isDark ? AppTypography.captionDark : AppTypography.caption),
+                                      AppSpacing.gapHMd,
+                                      Icon(Icons.access_time_rounded,
+                                          size: 14, color: isDark ? NeuColors.textHintDark : NeuColors.navyMid),
+                                      AppSpacing.gapHSm,
+                                      Text(meeting.time,
+                                          style: isDark ? AppTypography.captionDark : AppTypography.caption),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

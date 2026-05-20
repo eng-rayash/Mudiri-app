@@ -10,9 +10,12 @@ import '../../../core/theme/neu_decorations.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../../shared/widgets/export_button.dart';
+import '../../reports/domain/export_service.dart';
 import '../providers/meetings_provider.dart';
+import '../../../core/database/app_database.dart';
 
-/// Meetings List Screen — displays all meetings with search & filter.
+/// Meetings List Screen — displays all meetings with search, filter, multi-select, and export.
 class MeetingsListScreen extends ConsumerStatefulWidget {
   const MeetingsListScreen({super.key});
 
@@ -25,6 +28,7 @@ class _MeetingsListScreenState
     extends ConsumerState<MeetingsListScreen> {
   String _searchQuery = '';
   String _statusFilter = 'all';
+  final Set<int> _selectedIds = {};
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -35,9 +39,20 @@ class _MeetingsListScreenState
     FilterOption(label: 'ملغي', value: '4'),
   ];
 
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final meetingsAsync = ref.watch(meetingsListProvider);
 
     return Scaffold(
       backgroundColor:
@@ -47,35 +62,133 @@ class _MeetingsListScreenState
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
-              // Header
+              // Dynamic Header: Shows selection controls when _selectedIds is not empty
               Padding(
                 padding: AppSpacing.screen,
-                child: Row(
-                  children: [
-                    Text('الاجتماعات',
-                        style: isDark
-                            ? AppTypography.h2Dark
-                            : AppTypography.h2),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () =>
-                          context.push(RouteNames.meetingCreate),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? NeuColors.surfaceDark
-                              : NeuColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.add_rounded,
-                            color: isDark
-                                ? NeuColors.goldAccent
-                                : NeuColors.navyDeep,
-                            size: 22),
-                      ),
-                    ),
-                  ],
+                child: meetingsAsync.when(
+                  loading: () => _buildNormalHeader(isDark),
+                  error: (_, __) => _buildNormalHeader(isDark),
+                  data: (meetings) {
+                    var filtered = _applyFilters(meetings);
+                    if (_selectedIds.isNotEmpty) {
+                      return Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedIds.clear()),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? NeuColors.surfaceDark
+                                    : NeuColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.close_rounded,
+                                  color: isDark
+                                      ? NeuColors.goldAccent
+                                      : NeuColors.navyDeep,
+                                  size: 22),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'تم تحديد ${_selectedIds.length}',
+                            style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+                          ),
+                          const Spacer(),
+                          // Select/Deselect All
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (_selectedIds.length == filtered.length) {
+                                  _selectedIds.clear();
+                                } else {
+                                  _selectedIds.addAll(filtered.map((m) => m.id));
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? NeuColors.surfaceDark
+                                    : NeuColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _selectedIds.length == filtered.length
+                                    ? Icons.deselect_rounded
+                                    : Icons.select_all_rounded,
+                                color: isDark
+                                    ? NeuColors.goldAccent
+                                    : NeuColors.navyDeep,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                          // Export Button
+                          ExportButton(
+                            itemCount: _selectedIds.length,
+                            onExport: (format) {
+                              final selectedItems = filtered
+                                  .where((m) => _selectedIds.contains(m.id))
+                                  .toList();
+                              selectedItems.sort((a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'));
+                              final exportService = ref.read(exportServiceProvider);
+                              exportService.exportDataList(
+                                context: context,
+                                title: 'الاجتماعات الرسمية المحددة',
+                                items: selectedItems,
+                                headers: [
+                                  'م',
+                                  'العنوان',
+                                  'نوع الاجتماع',
+                                  'التاريخ',
+                                  'الوقت',
+                                  'المكان',
+                                  'الحضور',
+                                  'التفاصيل',
+                                  'المخرجات',
+                                  'القرارات',
+                                  'الاعمال',
+                                  'الملاحظات'
+                                ],
+                                itemMapper: (items) => items.asMap().entries.map((entry) {
+                                  final i = entry.key + 1;
+                                  final m = entry.value;
+                                  String typeStr = 'عام';
+                                  if (m.meetingType == 1) typeStr = 'إداري';
+                                  if (m.meetingType == 2) typeStr = 'طوارئ';
+                                  if (m.meetingType == 3) typeStr = 'مراجعة';
+                                  if (m.meetingType == 4) typeStr = 'تخطيط';
+                                  if (m.meetingType == 5) typeStr = 'متابعة';
+                                  if (m.meetingType == 6) typeStr = 'خارجي';
+                                  
+                                  return [
+                                    i.toString(),
+                                    m.title,
+                                    typeStr,
+                                    m.date,
+                                    m.time,
+                                    m.location ?? 'غير محدد',
+                                    exportService.decodeJsonArray(m.attendees),
+                                    m.objective ?? '',
+                                    exportService.decodeJsonArray(m.outcomes),
+                                    exportService.decodeJsonArray(m.decisions),
+                                    exportService.decodeJsonArray(m.agenda),
+                                    m.notes ?? '',
+                                  ];
+                                }).toList(),
+                                format: format,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    }
+                    return _buildNormalHeader(isDark);
+                  },
                 ),
               ),
 
@@ -94,7 +207,7 @@ class _MeetingsListScreenState
 
               // Meeting List
               Expanded(
-                child: ref.watch(meetingsListProvider).when(
+                child: meetingsAsync.when(
                   loading: () => const Center(
                       child: CircularProgressIndicator()),
                   error: (err, stack) => Center(
@@ -102,40 +215,7 @@ class _MeetingsListScreenState
                           style: AppTypography.bodySmall
                               .copyWith(color: NeuColors.danger))),
                   data: (meetings) {
-                    // Apply filters
-                    var filtered = meetings;
-
-                    // Status filter
-                    if (_statusFilter != 'all') {
-                      final statusVal =
-                          int.tryParse(_statusFilter);
-                      if (statusVal != null) {
-                        filtered = filtered
-                            .where(
-                                (m) => m.status == statusVal)
-                            .toList();
-                      }
-                    }
-
-                    // Search filter
-                    if (_searchQuery.isNotEmpty) {
-                      final q = _searchQuery.toLowerCase();
-                      filtered = filtered.where((m) {
-                        return m.title
-                                .toLowerCase()
-                                .contains(q) ||
-                            (m.location ?? '')
-                                .toLowerCase()
-                                .contains(q) ||
-                            (m.objective ?? '')
-                                .toLowerCase()
-                                .contains(q) ||
-                            (m.notes ?? '')
-                                .toLowerCase()
-                                .contains(q) ||
-                            m.date.contains(q);
-                      }).toList();
-                    }
+                    var filtered = _applyFilters(meetings);
 
                     if (filtered.isEmpty) {
                       return Center(
@@ -175,102 +255,131 @@ class _MeetingsListScreenState
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final meeting = filtered[index];
-                        return GestureDetector(
-                          onTap: () => context.push(
-                              RouteNames.meetingDetailPath(
-                                  meeting.id)),
-                          child: NeuCard(
-                            margin:
-                                const EdgeInsets.only(bottom: 16),
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        meeting.title,
-                                        style: isDark
-                                            ? AppTypography.h4Dark
-                                            : AppTypography.h4,
-                                        maxLines: 1,
-                                        overflow:
-                                            TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    StatusBadge
-                                        .fromMeetingStatus(
-                                            meeting.status),
-                                  ],
+                        final isSelected = _selectedIds.contains(meeting.id);
+
+                        return NeuCard(
+                          onTap: () {
+                            if (_selectedIds.isNotEmpty) {
+                              _toggleSelection(meeting.id);
+                            } else {
+                              context.push(
+                                  RouteNames.meetingDetailPath(
+                                      meeting.id));
+                            }
+                          },
+                          onLongPress: () => _toggleSelection(meeting.id),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (_selectedIds.isNotEmpty) ...[
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  color: isSelected
+                                      ? (isDark
+                                          ? NeuColors.goldAccent
+                                          : NeuColors.navyDeep)
+                                      : (isDark
+                                          ? NeuColors.textHintDark
+                                          : NeuColors.textHint),
+                                  size: 22,
                                 ),
-                                AppSpacing.gapSm,
-                                Row(
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                        Icons
-                                            .calendar_today_rounded,
-                                        size: 14,
-                                        color: isDark
-                                            ? NeuColors
-                                                .textHintDark
-                                            : NeuColors.navyMid),
-                                    AppSpacing.gapHSm,
-                                    Text(meeting.date,
-                                        style: isDark
-                                            ? AppTypography
-                                                .captionDark
-                                            : AppTypography
-                                                .caption),
-                                    AppSpacing.gapHMd,
-                                    Icon(
-                                        Icons
-                                            .access_time_rounded,
-                                        size: 14,
-                                        color: isDark
-                                            ? NeuColors
-                                                .textHintDark
-                                            : NeuColors.navyMid),
-                                    AppSpacing.gapHSm,
-                                    Text(meeting.time,
-                                        style: isDark
-                                            ? AppTypography
-                                                .captionDark
-                                            : AppTypography
-                                                .caption),
-                                    if (meeting.location !=
-                                            null &&
-                                        meeting.location!
-                                            .isNotEmpty) ...[
-                                      AppSpacing.gapHMd,
-                                      Icon(
-                                          Icons
-                                              .location_on_rounded,
-                                          size: 14,
-                                          color: isDark
-                                              ? NeuColors
-                                                  .textHintDark
-                                              : NeuColors
-                                                  .navyMid),
-                                      AppSpacing.gapHSm,
-                                      Expanded(
-                                        child: Text(
-                                            meeting.location!,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            meeting.title,
+                                            style: isDark
+                                                ? AppTypography.h4Dark
+                                                : AppTypography.h4,
+                                            maxLines: 1,
+                                            overflow:
+                                                TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        StatusBadge
+                                            .fromMeetingStatus(
+                                                meeting.status),
+                                      ],
+                                    ),
+                                    AppSpacing.gapSm,
+                                    Row(
+                                      children: [
+                                        Icon(
+                                            Icons
+                                                .calendar_today_rounded,
+                                            size: 14,
+                                            color: isDark
+                                                ? NeuColors
+                                                    .textHintDark
+                                                : NeuColors.navyMid),
+                                        AppSpacing.gapHSm,
+                                        Text(meeting.date,
                                             style: isDark
                                                 ? AppTypography
                                                     .captionDark
                                                 : AppTypography
-                                                    .caption,
-                                            maxLines: 1,
-                                            overflow:
-                                                TextOverflow
-                                                    .ellipsis),
-                                      ),
-                                    ],
+                                                    .caption),
+                                        AppSpacing.gapHMd,
+                                        Icon(
+                                            Icons
+                                                .access_time_rounded,
+                                            size: 14,
+                                            color: isDark
+                                                ? NeuColors
+                                                    .textHintDark
+                                                : NeuColors.navyMid),
+                                        AppSpacing.gapHSm,
+                                        Text(meeting.time,
+                                            style: isDark
+                                                ? AppTypography
+                                                    .captionDark
+                                                : AppTypography
+                                                    .caption),
+                                        if (meeting.location !=
+                                                null &&
+                                            meeting.location!
+                                                .isNotEmpty) ...[
+                                          AppSpacing.gapHMd,
+                                          Icon(
+                                              Icons
+                                                  .location_on_rounded,
+                                              size: 14,
+                                              color: isDark
+                                                  ? NeuColors
+                                                      .textHintDark
+                                                  : NeuColors
+                                                      .navyMid),
+                                          AppSpacing.gapHSm,
+                                          Expanded(
+                                            child: Text(
+                                                meeting.location!,
+                                                style: isDark
+                                                    ? AppTypography
+                                                        .captionDark
+                                                    : AppTypography
+                                                        .caption,
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow
+                                                        .ellipsis),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -282,17 +391,77 @@ class _MeetingsListScreenState
           ),
         ),
       ),
-      floatingActionButton: GestureDetector(
-        onTap: () => context.push(RouteNames.meetingCreate),
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: NeuDecorations.neuFlat(
-              radius: 50, isDark: isDark),
-          child: const Icon(Icons.add_rounded,
-              color: NeuColors.goldAccent, size: 28),
-        ),
-      ),
+      floatingActionButton: _selectedIds.isEmpty
+          ? GestureDetector(
+              onTap: () => context.push(RouteNames.meetingCreate),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: NeuDecorations.neuFlat(
+                    radius: 50, isDark: isDark),
+                child: const Icon(Icons.add_rounded,
+                    color: NeuColors.goldAccent, size: 28),
+              ),
+            )
+          : null,
     );
+  }
+
+  Widget _buildNormalHeader(bool isDark) {
+    return Row(
+      children: [
+        Text('الاجتماعات',
+            style: isDark
+                ? AppTypography.h2Dark
+                : AppTypography.h2),
+        const Spacer(),
+        GestureDetector(
+          onTap: () =>
+              context.push(RouteNames.meetingCreate),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? NeuColors.surfaceDark
+                  : NeuColors.surface,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.add_rounded,
+                color: isDark
+                    ? NeuColors.goldAccent
+                    : NeuColors.navyDeep,
+                size: 22),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Meeting> _applyFilters(List<Meeting> meetings) {
+    var filtered = meetings;
+
+    // Status filter
+    if (_statusFilter != 'all') {
+      final statusVal = int.tryParse(_statusFilter);
+      if (statusVal != null) {
+        filtered = filtered
+            .where((m) => m.status == statusVal)
+            .toList();
+      }
+    }
+
+    // Search filter
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((m) {
+        return m.title.toLowerCase().contains(q) ||
+            (m.location ?? '').toLowerCase().contains(q) ||
+            (m.objective ?? '').toLowerCase().contains(q) ||
+            (m.notes ?? '').toLowerCase().contains(q) ||
+            m.date.contains(q);
+      }).toList();
+    }
+
+    return filtered;
   }
 }

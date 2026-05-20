@@ -8,9 +8,11 @@ import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
+import '../../../shared/widgets/export_button.dart';
+import '../../reports/domain/export_service.dart';
 import '../domain/calls_repository.dart';
 
-/// Calls List Screen — with search & filter by call type.
+/// Calls List Screen — with search, filter by call type, multi-select, and export.
 class CallsListScreen extends ConsumerStatefulWidget {
   const CallsListScreen({super.key});
 
@@ -23,6 +25,7 @@ class _CallsListScreenState
     extends ConsumerState<CallsListScreen> {
   String _searchQuery = '';
   String _typeFilter = 'all';
+  final Set<int> _selectedIds = {};
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -33,6 +36,16 @@ class _CallsListScreenState
     FilterOption(
         label: 'فائتة', value: '2', icon: Icons.call_missed_rounded),
   ];
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,18 +59,119 @@ class _CallsListScreenState
         backgroundColor:
             isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
-        title: Text('سجل المكالمات',
-            style: isDark ? AppTypography.h3Dark : AppTypography.h3),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_ic_call_rounded,
-                color: isDark
-                    ? NeuColors.goldAccent
-                    : NeuColors.navyDeep),
-            onPressed: () => _showAddCallModal(context, ref, isDark),
-          ),
-        ],
+        centerTitle: _selectedIds.isEmpty,
+        leading: _selectedIds.isEmpty
+            ? null
+            : IconButton(
+                icon: Icon(Icons.close_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
+                onPressed: () => setState(() => _selectedIds.clear()),
+              ),
+        title: _selectedIds.isEmpty
+            ? Text('سجل المكالمات',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3)
+            : Text('تم تحديد ${_selectedIds.length}',
+                style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        actions: _selectedIds.isEmpty
+            ? [
+                IconButton(
+                  icon: Icon(Icons.add_ic_call_rounded,
+                      color: isDark
+                          ? NeuColors.goldAccent
+                          : NeuColors.navyDeep),
+                  onPressed: () => _showAddCallModal(context, ref, isDark),
+                ),
+              ]
+            : [
+                callsState.when(
+                  loading: () => const SizedBox(),
+                  error: (_, __) => const SizedBox(),
+                  data: (calls) {
+                    var filtered = calls.toList();
+                    // Type filter
+                    if (_typeFilter != 'all') {
+                      final typeVal = int.tryParse(_typeFilter);
+                      if (typeVal != null) {
+                        filtered = filtered
+                            .where((c) => c.callType == typeVal)
+                            .toList();
+                      }
+                    }
+                    // Search filter
+                    if (_searchQuery.isNotEmpty) {
+                      final q = _searchQuery.toLowerCase();
+                      filtered = filtered.where((c) {
+                        return c.callerName.toLowerCase().contains(q) ||
+                            (c.summary ?? '').toLowerCase().contains(q) ||
+                            c.date.contains(q);
+                      }).toList();
+                    }
+
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _selectedIds.length == filtered.length
+                                ? Icons.deselect_rounded
+                                : Icons.select_all_rounded,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              if (_selectedIds.length == filtered.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds.addAll(filtered.map((c) => c.id));
+                              }
+                            });
+                          },
+                        ),
+                        ExportButton(
+                          itemCount: _selectedIds.length,
+                          onExport: (format) {
+                            final selectedItems = filtered
+                                .where((c) => _selectedIds.contains(c.id))
+                                .toList();
+                            selectedItems.sort((a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'));
+                            final exportService = ref.read(exportServiceProvider);
+                            exportService.exportDataList(
+                              context: context,
+                              title: 'سجل المكالمات المحددة',
+                              items: selectedItems,
+                              headers: [
+                                'م',
+                                'اسم المتصل',
+                                'رقم الهاتف',
+                                'نوع المكالمة',
+                                'التاريخ',
+                                'الوقت',
+                                'الملخص',
+                                'هام'
+                              ],
+                              itemMapper: (items) => items.asMap().entries.map((entry) {
+                                final i = entry.key + 1;
+                                final c = entry.value;
+                                return [
+                                  i.toString(),
+                                  c.callerName,
+                                  c.phoneNumber ?? '',
+                                  c.callType == 0 ? 'واردة' : c.callType == 1 ? 'صادرة' : 'فائتة',
+                                  c.date,
+                                  c.time,
+                                  c.summary ?? '',
+                                  c.isImportant ? 'نعم' : 'لا',
+                                ];
+                              }).toList(),
+                              format: format,
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -133,65 +247,87 @@ class _CallsListScreenState
                         AppSpacing.gapMd,
                     itemBuilder: (context, index) {
                       final call = filtered[index];
-                      return NeuCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            _buildCallIcon(
-                                call.callType, isDark),
-                            AppSpacing.gapHMd,
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                            call.callerName,
-                                            style: isDark
-                                                ? AppTypography
-                                                    .h4Dark
-                                                : AppTypography
-                                                    .h4),
-                                      ),
-                                      if (call.isImportant) ...[
-                                        AppSpacing.gapHSm,
-                                        const Icon(
-                                            Icons.star_rounded,
-                                            color: NeuColors
-                                                .goldAccent,
-                                            size: 16),
+                      final isSelected = _selectedIds.contains(call.id);
+
+                      return GestureDetector(
+                        onTap: () => _toggleSelection(call.id),
+                        onLongPress: () => _toggleSelection(call.id),
+                        child: NeuCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              if (_selectedIds.isNotEmpty) ...[
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  color: isSelected
+                                      ? (isDark
+                                          ? NeuColors.goldAccent
+                                          : NeuColors.navyDeep)
+                                      : (isDark
+                                          ? NeuColors.textHintDark
+                                          : NeuColors.textHint),
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              _buildCallIcon(
+                                  call.callType, isDark),
+                              AppSpacing.gapHMd,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                              call.callerName,
+                                              style: isDark
+                                                  ? AppTypography
+                                                      .h4Dark
+                                                  : AppTypography
+                                                      .h4),
+                                        ),
+                                        if (call.isImportant) ...[
+                                          AppSpacing.gapHSm,
+                                          const Icon(
+                                              Icons.star_rounded,
+                                              color: NeuColors
+                                                  .goldAccent,
+                                              size: 16),
+                                        ],
                                       ],
-                                    ],
-                                  ),
-                                  AppSpacing.gapXs,
-                                  Text(
-                                      '${call.date} - ${call.time}',
-                                      style: isDark
-                                          ? AppTypography
-                                              .captionDark
-                                          : AppTypography
-                                              .caption),
-                                  if (call.summary != null &&
-                                      call.summary!
-                                          .isNotEmpty) ...[
+                                    ),
                                     AppSpacing.gapXs,
-                                    Text(call.summary!,
+                                    Text(
+                                        '${call.date} - ${call.time}',
                                         style: isDark
                                             ? AppTypography
-                                                .bodySmallDark
+                                                .captionDark
                                             : AppTypography
-                                                .bodySmall,
-                                        maxLines: 2,
-                                        overflow: TextOverflow
-                                            .ellipsis),
+                                                .caption),
+                                    if (call.summary != null &&
+                                        call.summary!
+                                            .isNotEmpty) ...[
+                                      AppSpacing.gapXs,
+                                      Text(call.summary!,
+                                          style: isDark
+                                              ? AppTypography
+                                                  .bodySmallDark
+                                              : AppTypography
+                                                  .bodySmall,
+                                          maxLines: 2,
+                                          overflow: TextOverflow
+                                              .ellipsis),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -294,7 +430,7 @@ class _CallsListScreenState
                 ),
                 AppSpacing.gapMd,
                 DropdownButtonFormField<int>(
-                  initialValue: selectedType,
+                  value: selectedType,
                   items: const [
                     DropdownMenuItem(
                         value: 0,
