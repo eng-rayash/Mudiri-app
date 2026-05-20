@@ -49,6 +49,11 @@ class CallsRepository {
   }
 
   Stream<List<CallItem>> watchAllCalls() => _dao.watchAllCalls();
+
+  Future<void> deleteCall(int id) async {
+    await _dao.softDelete(id);
+    await _logger.logRecordDeleted('مكالمة', id);
+  }
 }
 
 final callsRepositoryProvider = Provider<CallsRepository>((ref) {

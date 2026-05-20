@@ -10,10 +10,16 @@ class Archive extends Table with BaseTableMixin {
   /// Reference or document number (صادر / وارد)
   TextColumn get referenceNumber => text().nullable()();
 
-  /// Date of the document
+  /// Date of the document in Hijri calendar
+  TextColumn get hijriDate => text().nullable()();
+
+  /// Date of the document in Gregorian calendar
   TextColumn get documentDate => text().nullable()();
 
-  /// Category (e.g., Financial, Administrative, Secret)
+  /// Directed entity / Destination
+  TextColumn get directedEntity => text().nullable()();
+
+  /// Category (e.g., Financial, Administrative, Secret / Memo Type)
   TextColumn get category => text().nullable()();
 
   /// Local file path for offline access
@@ -21,6 +27,9 @@ class Archive extends Table with BaseTableMixin {
 
   /// Comma-separated tags for fast search
   TextColumn get tags => text().nullable()();
+
+  /// General memo notes
+  TextColumn get notes => text().nullable()();
   
   /// Is highly confidential?
   BoolColumn get isConfidential => boolean().withDefault(const Constant(false))();

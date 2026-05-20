@@ -7,9 +7,11 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../core/constants/enums.dart';
 import '../domain/meetings_repository.dart';
+import '../providers/meeting_categories_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
+import '../../../core/theme/neu_decorations.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_input.dart';
@@ -44,6 +46,7 @@ class _CreateMeetingScreenState
   final _locationController = TextEditingController();
   final _objectiveController = TextEditingController();
   final _notesController = TextEditingController();
+  final _typeController = TextEditingController();
 
   // ─── Dynamic Lists ─────────────────────────────────────────────
   final List<String> _attendees = [];
@@ -51,7 +54,6 @@ class _CreateMeetingScreenState
   final List<String> _decisions = [];
 
   // ─── State ─────────────────────────────────────────────────────
-  MeetingType _selectedType = MeetingType.general;
   Priority _selectedPriority = Priority.medium;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -63,6 +65,7 @@ class _CreateMeetingScreenState
     _locationController.dispose();
     _objectiveController.dispose();
     _notesController.dispose();
+    _typeController.dispose();
     super.dispose();
   }
 
@@ -169,15 +172,29 @@ class _CreateMeetingScreenState
     setState(() => _isSubmitting = true);
 
     try {
-      final repository = ref.read(meetingsRepositoryProvider);
       final formattedTime =
           '${_selectedTime.hour.toString().padLeft(2, '0')}:'
           '${_selectedTime.minute.toString().padLeft(2, '0')}';
 
-      await repository.createMeeting(
-        title: _titleController.text,
-        type: _selectedType,
-        date: _selectedDate,
+      final typeStr = _typeController.text.trim();
+      MeetingType finalEnum;
+      try {
+        finalEnum = MeetingType.values.firstWhere((e) => e.arabicLabel == typeStr);
+      } catch (_) {
+        finalEnum = MeetingType.general;
+      }
+      
+      String? customMeetingType = finalEnum == MeetingType.general && typeStr != MeetingType.general.arabicLabel 
+          ? typeStr 
+          : null;
+
+      await ref.read(meetingCategoriesProvider.notifier).addCategory(typeStr);
+
+      await ref.read(meetingsRepositoryProvider).createMeeting(
+            title: _titleController.text.trim(),
+            type: finalEnum,
+            customMeetingType: customMeetingType,
+            date: _selectedDate,
         time: formattedTime,
         priority: _selectedPriority,
         location: _locationController.text.isNotEmpty
@@ -263,49 +280,67 @@ class _CreateMeetingScreenState
               AppSpacing.gapLg,
 
               // ── Meeting Type ───────────────────────────────────
-              Text('نوع الاجتماع',
-                  style: isDark
-                      ? AppTypography.labelDark
-                      : AppTypography.label),
+              NeuInput(
+                controller: _typeController,
+                label: 'نوع الاجتماع *',
+                hint: 'اكتب نوع الاجتماع (مثال: إداري، طارئ...)',
+                prefixIcon: Icons.group_work_rounded,
+                validator: (val) => val == null || val.trim().isEmpty ? 'يرجى تحديد أو كتابة نوع الاجتماع' : null,
+              ),
+              AppSpacing.gapSm,
+              Text(
+                'اختر من القائمة أو أضف نوعاً جديداً. اضغط مطولاً على أي نوع لحذفه.',
+                style: isDark ? AppTypography.captionDark : AppTypography.caption,
+              ),
               AppSpacing.gapSm,
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: MeetingType.values.map((t) {
-                  final selected = _selectedType == t;
+                spacing: 10,
+                runSpacing: 10,
+                children: (ref.watch(meetingCategoriesProvider).value ?? []).map((type) {
+                  final isSelected = _typeController.text.trim() == type;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedType = t),
+                    onTap: () {
+                      setState(() {
+                        _typeController.text = type;
+                      });
+                    },
+                    onLongPress: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Text('حذف نوع الاجتماع', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+                          content: Text('هل تريد إزالة "$type" من قائمة الاقتراحات المحفوظة؟', style: isDark ? AppTypography.bodyDark : AppTypography.body),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: Text('إلغاء', style: TextStyle(color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('حذف', style: TextStyle(color: NeuColors.priorityCritical, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        ref.read(meetingCategoriesProvider.notifier).removeCategory(type);
+                      }
+                    },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? NeuColors.navyDeep
-                            : (isDark
-                                ? NeuColors.surfaceDark
-                                : NeuColors.surface),
-                        borderRadius: BorderRadius.circular(12),
-                        border: selected
-                            ? null
-                            : Border.all(
-                                color: isDark
-                                    ? NeuColors.borderDark
-                                    : NeuColors.border,
-                                width: 0.5),
-                      ),
+                      duration: NeuDecorations.pressDuration,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: isSelected
+                          ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                          : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
                       child: Text(
-                        t.arabicLabel,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: selected
-                              ? NeuColors.textOnDark
-                              : (isDark
-                                  ? NeuColors.textSecondaryDark
-                                  : NeuColors.textSecondary),
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                        type,
+                        style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                          color: isSelected 
+                              ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                              : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),

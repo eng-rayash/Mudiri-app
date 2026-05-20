@@ -55,6 +55,11 @@ class VisitorsRepository {
   }
 
   Stream<List<VisitorItem>> watchActiveVisitors() => _dao.watchActiveVisitors();
+
+  Future<void> deleteVisitor(int id) async {
+    await _dao.softDelete(id);
+    await _logger.logRecordDeleted('زائر', id);
+  }
 }
 
 final visitorsRepositoryProvider = Provider<VisitorsRepository>((ref) {

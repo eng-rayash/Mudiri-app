@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../domain/appointments_repository.dart';
 import '../../../shared/widgets/export_button.dart';
@@ -70,7 +71,7 @@ class _AppointmentsListScreenState
             : [
                 appointmentsAsync.when(
                   loading: () => const SizedBox(),
-                  error: (_, __) => const SizedBox(),
+                  error: (_, _) => const SizedBox(),
                   data: (appointments) {
                     var filtered = appointments.toList();
                     if (_searchQuery.isNotEmpty) {
@@ -146,6 +147,13 @@ class _AppointmentsListScreenState
                               format: format,
                             );
                           },
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: NeuColors.priorityCritical,
+                          ),
+                          onPressed: () => _confirmDeleteSelected(context),
                         ),
                       ],
                     );
@@ -383,5 +391,99 @@ class _AppointmentsListScreenState
             )
           : null,
     );
+  }
+
+  Future<void> _confirmDeleteSelected(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: NeuColors.priorityCritical,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'تأكيد الحذف',
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+                      color: NeuColors.priorityCritical,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'هل أنت متأكد من رغبتك في حذف المواعيد المحددة (${_selectedIds.length})؟ لا يمكن التراجع عن هذا الإجراء.',
+                    style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await _deleteSelectedItems();
+                          },
+                          label: 'حذف',
+                          variant: NeuButtonVariant.danger,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          label: 'إلغاء',
+                          variant: NeuButtonVariant.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteSelectedItems() async {
+    try {
+      final repo = ref.read(appointmentsRepositoryProvider);
+      for (final id in _selectedIds) {
+        await repo.deleteAppointment(id);
+      }
+      setState(() {
+        _selectedIds.clear();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف المواعيد المحددة بنجاح', textDirection: TextDirection.rtl),
+            backgroundColor: NeuColors.priorityCritical,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ أثناء الحذف: $e', textDirection: TextDirection.rtl),
+            backgroundColor: NeuColors.priorityCritical,
+          ),
+        );
+      }
+    }
   }
 }

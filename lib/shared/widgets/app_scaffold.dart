@@ -23,7 +23,7 @@ class AppShellScaffold extends StatelessWidget {
     _NavItem(icon: Icons.groups_rounded, label: 'الاجتماعات', path: RouteNames.meetingsListFull),
     _NavItem(icon: Icons.task_alt_rounded, label: 'المهام', path: RouteNames.tasksListFull),
     _NavItem(icon: Icons.replay_rounded, label: 'المتابعات', path: RouteNames.followupsListFull),
-    _NavItem(icon: Icons.contacts_rounded, label: 'جهات الاتصال', path: RouteNames.contactsListFull),
+    _NavItem(icon: Icons.archive_rounded, label: 'أرشيف المذكرات', path: RouteNames.archiveListFull),
   ];
 
   @override

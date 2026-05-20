@@ -57,4 +57,7 @@ class Meetings extends Table with BaseTableMixin {
 
   /// Recurrence rule (for repeating meetings, future use)
   TextColumn get recurrenceRule => text().nullable()();
+
+  /// Custom dynamic meeting type (if the user overrides the standard enum)
+  TextColumn get customMeetingType => text().nullable()();
 }

@@ -55,7 +55,7 @@ class BackupService {
   /// Returns true if successfully restored. App should restart after.
   Future<bool> restoreBackup() async {
     try {
-      final result = await FilePicker.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
       );

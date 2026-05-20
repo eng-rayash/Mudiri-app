@@ -21,14 +21,14 @@ class RouteNames {
   static const String meetingsList = 'meetings';
   static const String tasksList = 'tasks';
   static const String followupsList = 'followups';
-  static const String contactsListShell = 'contacts';
+  static const String archiveListShell = 'archive';
 
   // Full paths for shell routes
   static const String dashboardFull = '/home/dashboard';
   static const String meetingsListFull = '/home/meetings';
   static const String tasksListFull = '/home/tasks';
   static const String followupsListFull = '/home/followups';
-  static const String contactsListFull = '/home/contacts';
+  static const String archiveListFull = '/home/archive';
 
   // ─────────────────────────────────────────────
   // Followups Routes
@@ -88,6 +88,7 @@ class RouteNames {
   
   static const String archiveList = '/archive';
   static const String archiveCreate = '/archive/create';
+  static const String archivePdfViewer = '/archive/pdf-viewer';
 
   // Phase 4 Modules
   static const String callsList = '/calls';

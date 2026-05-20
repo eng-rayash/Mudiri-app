@@ -24,4 +24,12 @@ class VisitorsDao extends DatabaseAccessor<AppDatabase> with _$VisitorsDaoMixin 
       (select(visitors)..where((t) => t.isDeleted.equals(false) & t.status.isSmallerThanValue(2))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
           .watch();
+
+  Future<void> softDelete(int id) =>
+      (update(visitors)..where((v) => v.id.equals(id))).write(
+        VisitorsCompanion(
+          isDeleted: const Value(true),
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
 }

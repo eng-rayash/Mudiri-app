@@ -2,16 +2,19 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/constants/enums.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/dao/notes_dao.dart';
 import '../../../core/database/providers/database_providers.dart';
+import '../../../core/security/security_logger.dart';
 
 /// Repository for Notes — Phase 4
 class NotesRepository {
   final NotesDao _dao;
+  final SecurityLogger _logger;
   final _uuid = const Uuid();
 
-  NotesRepository(this._dao);
+  NotesRepository(this._dao, this._logger);
 
   Future<void> createNote({
     String? title,
@@ -30,10 +33,12 @@ class NotesRepository {
     );
 
     await _dao.insertNote(companion);
+    await _logger.log(SecurityAction.settingsChanged, details: 'تم إنشاء ملاحظة جديدة: ${title ?? "بدون عنوان"}');
   }
 
   Future<void> deleteNote(int id) async {
     await _dao.deleteNoteSoft(id);
+    await _logger.logRecordDeleted('ملاحظة', id);
   }
 
   Stream<List<NoteItem>> watchAllNotes() => _dao.watchAllNotes();
@@ -41,7 +46,9 @@ class NotesRepository {
 
 final notesRepositoryProvider = Provider<NotesRepository>((ref) {
   final dao = ref.watch(notesDaoProvider);
-  return NotesRepository(dao);
+  final db = ref.watch(databaseProvider);
+  final logger = SecurityLogger(db.securityLogsDao);
+  return NotesRepository(dao, logger);
 });
 
 final notesListProvider = StreamProvider<List<NoteItem>>((ref) {

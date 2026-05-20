@@ -95,6 +95,13 @@ class MeetingDetailScreen extends ConsumerWidget {
                         ],
                       ),
                       AppSpacing.gapMd,
+                      _buildInfoRow(
+                        context, 
+                        Icons.group_work_rounded, 
+                        'النوع', 
+                        meeting.customMeetingType ?? MeetingType.fromValue(meeting.meetingType).arabicLabel
+                      ),
+                      AppSpacing.gapSm,
                       _buildInfoRow(context, Icons.calendar_today_rounded, 'التاريخ', meeting.date),
                       AppSpacing.gapSm,
                       _buildInfoRow(context, Icons.access_time_rounded, 'الوقت', meeting.time),

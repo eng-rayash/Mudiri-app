@@ -9,9 +9,11 @@ import '../providers/meetings_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
+import '../../../core/theme/neu_decorations.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_input.dart';
+import '../providers/meeting_categories_provider.dart';
 
 /// Edit Meeting Screen — form for editing an existing meeting.
 class EditMeetingScreen extends ConsumerStatefulWidget {
@@ -29,8 +31,8 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
   late TextEditingController _locationController;
   late TextEditingController _objectiveController;
   late TextEditingController _notesController;
+  late TextEditingController _typeController;
 
-  MeetingType? _selectedType;
   Priority? _selectedPriority;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -44,6 +46,7 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
     _locationController = TextEditingController();
     _objectiveController = TextEditingController();
     _notesController = TextEditingController();
+    _typeController = TextEditingController();
   }
 
   @override
@@ -52,6 +55,7 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
     _locationController.dispose();
     _objectiveController.dispose();
     _notesController.dispose();
+    _typeController.dispose();
     super.dispose();
   }
 
@@ -63,7 +67,7 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
     _objectiveController.text = meeting.objective ?? '';
     _notesController.text = meeting.notes ?? '';
 
-    _selectedType = MeetingType.fromValue(meeting.meetingType);
+    _typeController.text = meeting.customMeetingType ?? MeetingType.fromValue(meeting.meetingType).arabicLabel;
     _selectedPriority = Priority.fromValue(meeting.priority);
     _selectedDate = DateTime.parse(meeting.date);
     
@@ -97,17 +101,32 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _selectedType == null || _selectedPriority == null || _selectedDate == null || _selectedTime == null) return;
+    if (!_formKey.currentState!.validate() || _typeController.text.trim().isEmpty || _selectedPriority == null || _selectedDate == null || _selectedTime == null) return;
     setState(() => _isSubmitting = true);
 
     try {
       final repository = ref.read(meetingsRepositoryProvider);
       final formattedTime = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
       
+      final typeStr = _typeController.text.trim();
+      MeetingType finalEnum;
+      try {
+        finalEnum = MeetingType.values.firstWhere((e) => e.arabicLabel == typeStr);
+      } catch (_) {
+        finalEnum = MeetingType.general;
+      }
+      
+      String? customMeetingType = finalEnum == MeetingType.general && typeStr != MeetingType.general.arabicLabel 
+          ? typeStr 
+          : null;
+
+      await ref.read(meetingCategoriesProvider.notifier).addCategory(typeStr);
+
       await repository.updateMeetingDetails(
         id: widget.meetingId,
-        title: _titleController.text,
-        type: _selectedType!,
+        title: _titleController.text.trim(),
+        type: finalEnum,
+        customMeetingType: customMeetingType,
         date: _selectedDate!,
         time: formattedTime,
         priority: _selectedPriority!,
@@ -188,31 +207,62 @@ class _EditMeetingScreenState extends ConsumerState<EditMeetingScreen> {
                   AppSpacing.gapLg,
 
                   // Meeting Type
+                  NeuInput(
+                    controller: _typeController,
+                    label: 'نوع الاجتماع *',
+                    hint: 'اكتب نوع الاجتماع (مثال: إداري، طارئ...)',
+                    prefixIcon: Icons.group_work_rounded,
+                    validator: (val) => val == null || val.trim().isEmpty ? 'يرجى تحديد أو كتابة نوع الاجتماع' : null,
+                  ),
+                  AppSpacing.gapSm,
                   Text(
-                    'نوع الاجتماع', 
-                    style: isDark ? AppTypography.labelDark : AppTypography.label,
+                    'اختر من القائمة أو أضف نوعاً جديداً. اضغط مطولاً على أي نوع لحذفه.',
+                    style: isDark ? AppTypography.captionDark : AppTypography.caption,
                   ),
                   AppSpacing.gapSm,
                   Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: MeetingType.values.map((t) {
-                      final selected = _selectedType == t;
+                    spacing: 10, runSpacing: 10,
+                    children: (ref.watch(meetingCategoriesProvider).value ?? []).map((type) {
+                      final isSelected = _typeController.text.trim() == type;
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedType = t),
-                        child: Container(
+                        onTap: () => setState(() => _typeController.text = type),
+                        onLongPress: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: Text('حذف نوع الاجتماع', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+                              content: Text('هل تريد إزالة "$type" من قائمة الاقتراحات المحفوظة؟', style: isDark ? AppTypography.bodyDark : AppTypography.body),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: Text('إلغاء', style: TextStyle(color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('حذف', style: TextStyle(color: NeuColors.priorityCritical, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            ref.read(meetingCategoriesProvider.notifier).removeCategory(type);
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: NeuDecorations.pressDuration,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: selected 
-                                ? NeuColors.navyDeep 
-                                : (isDark ? NeuColors.surfaceDark : NeuColors.surface),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          decoration: isSelected 
+                              ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                              : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
                           child: Text(
-                            t.arabicLabel, 
-                            style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmall).copyWith(
-                              color: selected 
-                                  ? NeuColors.textOnDark 
+                            type, 
+                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                              color: isSelected 
+                                  ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
                                   : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         ),

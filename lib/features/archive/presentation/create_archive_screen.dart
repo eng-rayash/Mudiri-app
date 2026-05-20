@@ -1,16 +1,29 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
+import '../../../core/theme/neu_decorations.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_input.dart';
 import '../domain/archive_repository.dart';
+import '../providers/archive_categories_provider.dart';
 
-/// Screen for creating a new archive document entry
+/// Professional Executive screen for creating a new official Memo.
+/// Includes camera scanner, auto Hijri/Gregorian date formatting,
+/// and automated high-quality scanned PDF generation.
 class CreateArchiveScreen extends ConsumerStatefulWidget {
   const CreateArchiveScreen({super.key});
 
@@ -20,53 +33,244 @@ class CreateArchiveScreen extends ConsumerStatefulWidget {
 
 class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
   final _formKey = GlobalKey<FormState>();
+  
+  // Controllers
   final _titleController = TextEditingController();
   final _refNumberController = TextEditingController();
-  final _dateController = TextEditingController();
+  final _dateController = TextEditingController(); // Gregorian and Hijri summary text
+  final _directedEntityController = TextEditingController();
+  final _notesController = TextEditingController();
   final _categoryController = TextEditingController();
-  final _tagsController = TextEditingController();
 
+  // Selected State
+  DateTime? _selectedDate;
+  String? _gregorianDateStr;
+  String? _hijriDateStr;
+  
   bool _isConfidential = false;
   bool _isLoading = false;
+
+  // Scanner State
+  final List<File> _capturedImages = [];
+  File? _pickedDocument;
+  final _picker = ImagePicker();
 
   @override
   void dispose() {
     _titleController.dispose();
     _refNumberController.dispose();
     _dateController.dispose();
+    _directedEntityController.dispose();
+    _notesController.dispose();
     _categoryController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
+  // --- Date Picking & Hijri Conversion ---
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      locale: const Locale('ar'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: NeuColors.navyDeep,
+              onPrimary: Colors.white,
+              onSurface: NeuColors.navyDeep,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      // Setup Hijri Locale to Arabic
+      HijriCalendar.setLocal('ar');
+      final hijri = HijriCalendar.fromDate(picked);
+      
+      setState(() {
+        _selectedDate = picked;
+        _gregorianDateStr = DateFormat('yyyy-MM-dd').format(picked);
+        
+        // Custom elegant Hijri representation: e.g., "15 ربيع الثاني 1445"
+        _hijriDateStr = '${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear}';
+        
+        _dateController.text = '$_gregorianDateStr م  |  $_hijriDateStr هـ';
+      });
+    }
+  }
+
+  // --- Image Pickers ---
+  Future<void> _captureWithCamera() async {
+    try {
+      final image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (image != null) {
+        setState(() {
+          _capturedImages.add(File(image.path));
+          _pickedDocument = null; // Clear picked document if images are used
+        });
+      }
+    } catch (e) {
+      _showSnackBar('خطأ أثناء التقاط الصورة: $e');
+    }
+  }
+
+  Future<void> _selectFromGallery() async {
+    try {
+      final images = await _picker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (images.isNotEmpty) {
+        setState(() {
+          _capturedImages.addAll(images.map((x) => File(x.path)));
+          _pickedDocument = null; // Clear picked document if images are used
+        });
+      }
+    } catch (e) {
+      _showSnackBar('خطأ أثناء اختيار الصور: $e');
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _pickedDocument = File(result.files.single.path!);
+          _capturedImages.clear(); // Clear images if a document is picked
+        });
+      }
+    } catch (e) {
+      if (mounted) _showSnackBar('تعذر اختيار الملف');
+    }
+  }
+
+  void _removeCapturedImage(int index) {
+    setState(() {
+      _capturedImages.removeAt(index);
+    });
+  }
+
+  // --- PDF Generation ---
+  Future<String?> _generateOrCopyDocument() async {
+    final String titleStr = _titleController.text.trim().replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
+    final String refStr = _refNumberController.text.trim().replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
+    
+    String pdfFilename;
+    if (titleStr.isNotEmpty && refStr.isNotEmpty) {
+      pdfFilename = '$titleStr - $refStr';
+    } else if (titleStr.isNotEmpty) {
+      pdfFilename = titleStr;
+    } else {
+      pdfFilename = 'مذكرة_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
+    final outputDirectory = await getApplicationDocumentsDirectory();
+
+    if (_pickedDocument != null) {
+      final ext = _pickedDocument!.path.split('.').last;
+      final finalName = '$pdfFilename.$ext';
+      final newFile = await _pickedDocument!.copy('${outputDirectory.path}/$finalName');
+      return newFile.path;
+    }
+
+    if (_capturedImages.isEmpty) return null;
+
+    final pdf = pw.Document();
+    
+    for (final file in _capturedImages) {
+      // Use flutterImageProvider to safely decode all image formats (e.g. HEIC) and apply EXIF rotation
+      final pdfImage = await flutterImageProvider(FileImage(file));
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.zero, // scanner/full-bleed look
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Image(pdfImage, fit: pw.BoxFit.contain),
+            );
+          },
+        ),
+      );
+    }
+
+    final pdfFile = File('${outputDirectory.path}/$pdfFilename.pdf');
+    await pdfFile.writeAsBytes(await pdf.save());
+    
+    return pdfFile.path;
+  }
+
+  void _showSnackBar(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text, textDirection: TextDirection.rtl),
+        backgroundColor: NeuColors.navyDeep,
+      ),
+    );
+  }
+
+  // --- Form Submission ---
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
+    
     setState(() => _isLoading = true);
 
     try {
-      final repository = ref.read(archiveRepositoryProvider);
+      final finalCategory = _categoryController.text.trim();
 
+      if (finalCategory.isEmpty) {
+        _showSnackBar('يرجى تحديد أو كتابة نوع المذكرة');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Automatically save custom memo type to persisted suggestions
+      await ref.read(archiveCategoriesProvider.notifier).addCategory(finalCategory);
+
+      // Compile images into a high-quality PDF or copy picked document
+      String? localPdfPath;
+      if (_capturedImages.isNotEmpty || _pickedDocument != null) {
+        localPdfPath = await _generateOrCopyDocument();
+      }
+
+      final repository = ref.read(archiveRepositoryProvider);
       await repository.createArchiveRecord(
         title: _titleController.text.trim(),
         referenceNumber: _refNumberController.text.trim(),
-        documentDate: _dateController.text.trim(),
-        category: _categoryController.text.trim(),
-        tags: _tagsController.text.trim(),
+        documentDate: _gregorianDateStr,
+        hijriDate: _hijriDateStr,
+        directedEntity: _directedEntityController.text.trim(),
+        category: finalCategory,
+        localFilePath: localPdfPath,
+        tags: '',
+        notes: _notesController.text.trim(),
         isConfidential: _isConfidential,
       );
 
       if (mounted) {
-        context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم أرشفة الوثيقة بنجاح')),
-        );
+        _showSnackBar('تم حفظ وأرشفة المذكرة الرسمية بنجاح');
+        context.pop(true); // Return success to trigger list refresh
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e')),
-        );
+        _showSnackBar('حدث خطأ أثناء أرشفة المذكرة: $e');
       }
     } finally {
       if (mounted) {
@@ -78,6 +282,7 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
@@ -87,93 +292,386 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
           icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('أرشفة وثيقة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        title: Text('أرشفة مذكرة رسمية جديدة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: AppSpacing.screen,
-            children: [
-              NeuInput(
-                controller: _titleController,
-                label: 'عنوان الوثيقة *',
-                hint: 'أدخل عنوان أو وصف الوثيقة',
-                prefixIcon: Icons.title_rounded,
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'حقل مطلوب' : null,
-              ),
-              AppSpacing.gapLg,
-              
-              NeuInput(
-                controller: _refNumberController,
-                label: 'الرقم المرجعي (صادر/وارد)',
-                hint: 'مثال: ص-1445-123',
-                prefixIcon: Icons.tag_rounded,
-              ),
-              AppSpacing.gapLg,
+      body: SafeArea(
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: AppSpacing.screen,
+              children: [
+                // 1. Memo Subject (Title)
+                NeuInput(
+                  controller: _titleController,
+                  label: 'موضوع المذكرة *',
+                  hint: 'أدخل موضوع أو عنوان المذكرة التفصيلي',
+                  prefixIcon: Icons.subtitles_rounded,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'هذا الحقل مطلوب' : null,
+                ),
+                AppSpacing.gapLg,
 
-              NeuInput(
-                controller: _dateController,
-                label: 'تاريخ الوثيقة',
-                hint: 'مثال: 10/05/2026',
-                prefixIcon: Icons.calendar_today_rounded,
-              ),
-              AppSpacing.gapLg,
-
-              NeuInput(
-                controller: _categoryController,
-                label: 'التصنيف',
-                hint: 'إداري، مالي، قانوني...',
-                prefixIcon: Icons.category_rounded,
-              ),
-              AppSpacing.gapLg,
-
-              NeuInput(
-                controller: _tagsController,
-                label: 'الكلمات المفتاحية',
-                hint: 'افصل بين الكلمات بفاصلة (،)',
-                prefixIcon: Icons.label_rounded,
-              ),
-              AppSpacing.gapXxl,
-              
-              // Confidential Toggle
-              NeuCard(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.lock_rounded, 
-                          color: _isConfidential ? NeuColors.priorityCritical : NeuColors.textHint),
-                        const SizedBox(width: 12),
-                        Text(
-                          'وثيقة سريّة',
-                          style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                 // 2. Memo Type (Manual entry with suggestion chips)
+                NeuInput(
+                  controller: _categoryController,
+                  label: 'نوع المذكرة *',
+                  hint: 'اكتب نوع المذكرة (مثال: خطاب، تعميم، قرار...)',
+                  prefixIcon: Icons.edit_note_rounded,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'يرجى تحديد أو كتابة نوع المذكرة' : null,
+                ),
+                AppSpacing.gapSm,
+                Text(
+                  'اختر من القائمة أو أضف نوعاً جديداً. اضغط مطولاً على أي نوع لحذفه.',
+                  style: isDark ? AppTypography.captionDark : AppTypography.caption,
+                ),
+                AppSpacing.gapSm,
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: (ref.watch(archiveCategoriesProvider).value ?? []).map((type) {
+                    final isSelected = _categoryController.text.trim() == type;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _categoryController.text = type;
+                        });
+                      },
+                      onLongPress: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: Text('حذف نوع المذكرة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+                            content: Text('هل تريد إزالة "$type" من قائمة الاقتراحات المحفوظة؟', style: isDark ? AppTypography.bodyDark : AppTypography.body),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text('إلغاء', style: TextStyle(color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary)),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('حذف', style: TextStyle(color: NeuColors.priorityCritical, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          ref.read(archiveCategoriesProvider.notifier).removeCategory(type);
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: NeuDecorations.pressDuration,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: isSelected
+                            ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                            : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
+                        child: Text(
+                          type,
+                          style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                            color: isSelected 
+                                ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                                : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
                         ),
-                      ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+                AppSpacing.gapLg,
+
+                // 3. Memo Number (Reference) & Directed Entity (Side by Side / Column)
+                Row(
+                  children: [
+                    Expanded(
+                      child: NeuInput(
+                        controller: _refNumberController,
+                        label: 'رقم المذكرة',
+                        hint: 'مثال: م-123-45',
+                        prefixIcon: Icons.tag_rounded,
+                      ),
                     ),
-                    Switch.adaptive(
-                      value: _isConfidential,
-                      onChanged: (val) => setState(() => _isConfidential = val),
-                      activeThumbColor: NeuColors.priorityCritical,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: NeuInput(
+                        controller: _directedEntityController,
+                        label: 'الجهة الموجهة إليها',
+                        hint: 'الوزارة، الإدارة العامة...',
+                        prefixIcon: Icons.business_rounded,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              
-              AppSpacing.gapXxl,
-              NeuButton(
-                onPressed: _isLoading ? null : _submit,
-                isLoading: _isLoading,
-                label: 'حفظ الوثيقة',
-                icon: Icons.save_rounded,
-              ),
-              AppSpacing.gapXxl,
-            ],
+                AppSpacing.gapLg,
+
+                // 4. Integrated Dates Picker
+                GestureDetector(
+                  onTap: _pickDate,
+                  child: AbsorbPointer(
+                    child: NeuInput(
+                      controller: _dateController,
+                      label: 'التاريخ الهجري والميلادي',
+                      hint: 'انقر لتحديد تاريخ المذكرة الرسمي',
+                      prefixIcon: Icons.calendar_month_rounded,
+                    ),
+                  ),
+                ),
+                AppSpacing.gapLg,
+
+                // 5. Notes & Keywords
+                NeuInput(
+                  controller: _notesController,
+                  label: 'الملاحظات / مخرجات المذكرة',
+                  hint: 'أدخل أي ملاحظات، قرارات أو مخرجات خاصة بالمذكرة',
+                  prefixIcon: Icons.description_rounded,
+                  maxLines: 3,
+                ),
+                AppSpacing.gapXxl,
+
+                // 6. Camera Photo Scanning Section
+                NeuCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.document_scanner_rounded, color: NeuColors.navyMid),
+                              const SizedBox(width: 8),
+                              Text(
+                                'مرفقات المذكرة (PDF ممسوح ضوئياً)',
+                                style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          if (_capturedImages.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: NeuColors.navyDeep.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'عدد الصفحات: ${_capturedImages.length}',
+                                style: TextStyle(
+                                  color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'قم بتصوير المذكرة الورقية بواسطة الكاميرا، اختر صوراً، أو أرفق مستنداً جاهزاً (PDF/DOC)، وسيقوم النظام بتسميته تلقائياً باسم ورقم المذكرة وحفظه.',
+                        style: isDark ? AppTypography.captionDark : AppTypography.caption,
+                      ),
+                      const SizedBox(height: 16),
+                      if (_pickedDocument != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark ? NeuColors.surfaceDark : NeuColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: NeuColors.navyDeep.withAlpha(50)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.picture_as_pdf_rounded, color: NeuColors.danger, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _pickedDocument!.path.split(Platform.pathSeparator).last,
+                                  style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded, color: NeuColors.danger),
+                                onPressed: () => setState(() => _pickedDocument = null),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _captureWithCamera,
+                              icon: const Icon(Icons.camera_alt_rounded),
+                              label: const Text('تصوير بالكاميرا'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                side: BorderSide(color: isDark ? NeuColors.goldAccent.withValues(alpha: 0.5) : NeuColors.navyDeep.withValues(alpha: 0.5)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _selectFromGallery,
+                              icon: const Icon(Icons.photo_library_rounded),
+                              label: const Text('المعرض (الألبوم)'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                side: BorderSide(color: isDark ? NeuColors.goldAccent.withValues(alpha: 0.5) : NeuColors.navyDeep.withValues(alpha: 0.5)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _pickDocument,
+                          icon: const Icon(Icons.upload_file_rounded),
+                          label: const Text('إرفاق مستند من الهاتف (PDF/DOC)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: isDark ? NeuColors.goldAccent.withAlpha(128) : NeuColors.navyDeep.withAlpha(128)),
+                          ),
+                        ),
+                      ),
+                      
+                      // Thumbnails horizontal list
+                      if (_capturedImages.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 130,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _capturedImages.length,
+                            itemBuilder: (context, index) {
+                              final file = _capturedImages[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: isDark ? NeuColors.dividerDark : NeuColors.divider, width: 1),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(11),
+                                        child: Image.file(
+                                          file,
+                                          width: 90,
+                                          height: 130,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: GestureDetector(
+                                        onTap: () => _removeCapturedImage(index),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.black87,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 4,
+                                      left: 4,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: NeuColors.navyDeep.withValues(alpha: 0.8),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'صفحة ${index + 1}',
+                                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                AppSpacing.gapXxl,
+
+                // 7. Confidential Toggle
+                NeuCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.lock_rounded, 
+                            color: _isConfidential ? NeuColors.priorityCritical : NeuColors.textHint),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'مذكرة سريّة للغاية',
+                                style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'الوصول لهذه المذكرة سيتطلب تسجيل الدخول وسيقيد المعاينة',
+                                style: isDark ? AppTypography.captionDark : AppTypography.caption,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Switch.adaptive(
+                        value: _isConfidential,
+                        onChanged: (val) => setState(() => _isConfidential = val),
+                        activeThumbColor: NeuColors.priorityCritical,
+                        activeTrackColor: NeuColors.priorityCritical.withValues(alpha: 0.4),
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapXxl,
+
+                // 8. Submit Button
+                NeuButton(
+                  onPressed: _isLoading ? null : _submit,
+                  isLoading: _isLoading,
+                  label: 'حفظ المذكرة في الأرشيف',
+                  icon: Icons.save_rounded,
+                ),
+                AppSpacing.gapXxl,
+              ],
+            ),
           ),
         ),
       ),

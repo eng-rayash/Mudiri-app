@@ -101,6 +101,19 @@ class AppDatabase extends _$AppDatabase {
             try { await m.createTable(visitors); } catch (_) {}
             try { await m.createTable(notes); } catch (_) {}
           }
+          if (from < 3) {
+            try {
+              await m.addColumn(archive, archive.hijriDate);
+              await m.addColumn(archive, archive.documentDate);
+              await m.addColumn(archive, archive.directedEntity);
+              await m.addColumn(archive, archive.notes);
+            } catch (_) {}
+          }
+          if (from < 4) {
+            try {
+              await m.addColumn(meetings, meetings.customMeetingType);
+            } catch (_) {}
+          }
         },
         beforeOpen: (details) async {
           // Enable foreign keys

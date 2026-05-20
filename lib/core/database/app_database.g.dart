@@ -999,6 +999,18 @@ class $MeetingsTable extends Meetings with TableInfo<$MeetingsTable, Meeting> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _customMeetingTypeMeta = const VerificationMeta(
+    'customMeetingType',
+  );
+  @override
+  late final GeneratedColumn<String> customMeetingType =
+      GeneratedColumn<String>(
+        'custom_meeting_type',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1024,6 +1036,7 @@ class $MeetingsTable extends Meetings with TableInfo<$MeetingsTable, Meeting> {
     notes,
     minutes,
     recurrenceRule,
+    customMeetingType,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1193,6 +1206,15 @@ class $MeetingsTable extends Meetings with TableInfo<$MeetingsTable, Meeting> {
         ),
       );
     }
+    if (data.containsKey('custom_meeting_type')) {
+      context.handle(
+        _customMeetingTypeMeta,
+        customMeetingType.isAcceptableOrUnknown(
+          data['custom_meeting_type']!,
+          _customMeetingTypeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1294,6 +1316,10 @@ class $MeetingsTable extends Meetings with TableInfo<$MeetingsTable, Meeting> {
         DriftSqlType.string,
         data['${effectivePrefix}recurrence_rule'],
       ),
+      customMeetingType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_meeting_type'],
+      ),
     );
   }
 
@@ -1372,6 +1398,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
 
   /// Recurrence rule (for repeating meetings, future use)
   final String? recurrenceRule;
+
+  /// Custom dynamic meeting type (if the user overrides the standard enum)
+  final String? customMeetingType;
   const Meeting({
     required this.id,
     required this.syncId,
@@ -1396,6 +1425,7 @@ class Meeting extends DataClass implements Insertable<Meeting> {
     this.notes,
     this.minutes,
     this.recurrenceRule,
+    this.customMeetingType,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1446,6 +1476,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
     }
     if (!nullToAbsent || recurrenceRule != null) {
       map['recurrence_rule'] = Variable<String>(recurrenceRule);
+    }
+    if (!nullToAbsent || customMeetingType != null) {
+      map['custom_meeting_type'] = Variable<String>(customMeetingType);
     }
     return map;
   }
@@ -1499,6 +1532,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
       recurrenceRule: recurrenceRule == null && nullToAbsent
           ? const Value.absent()
           : Value(recurrenceRule),
+      customMeetingType: customMeetingType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customMeetingType),
     );
   }
 
@@ -1531,6 +1567,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
       notes: serializer.fromJson<String?>(json['notes']),
       minutes: serializer.fromJson<String?>(json['minutes']),
       recurrenceRule: serializer.fromJson<String?>(json['recurrenceRule']),
+      customMeetingType: serializer.fromJson<String?>(
+        json['customMeetingType'],
+      ),
     );
   }
   @override
@@ -1560,6 +1599,7 @@ class Meeting extends DataClass implements Insertable<Meeting> {
       'notes': serializer.toJson<String?>(notes),
       'minutes': serializer.toJson<String?>(minutes),
       'recurrenceRule': serializer.toJson<String?>(recurrenceRule),
+      'customMeetingType': serializer.toJson<String?>(customMeetingType),
     };
   }
 
@@ -1587,6 +1627,7 @@ class Meeting extends DataClass implements Insertable<Meeting> {
     Value<String?> notes = const Value.absent(),
     Value<String?> minutes = const Value.absent(),
     Value<String?> recurrenceRule = const Value.absent(),
+    Value<String?> customMeetingType = const Value.absent(),
   }) => Meeting(
     id: id ?? this.id,
     syncId: syncId ?? this.syncId,
@@ -1613,6 +1654,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
     recurrenceRule: recurrenceRule.present
         ? recurrenceRule.value
         : this.recurrenceRule,
+    customMeetingType: customMeetingType.present
+        ? customMeetingType.value
+        : this.customMeetingType,
   );
   Meeting copyWithCompanion(MeetingsCompanion data) {
     return Meeting(
@@ -1645,6 +1689,9 @@ class Meeting extends DataClass implements Insertable<Meeting> {
       recurrenceRule: data.recurrenceRule.present
           ? data.recurrenceRule.value
           : this.recurrenceRule,
+      customMeetingType: data.customMeetingType.present
+          ? data.customMeetingType.value
+          : this.customMeetingType,
     );
   }
 
@@ -1673,7 +1720,8 @@ class Meeting extends DataClass implements Insertable<Meeting> {
           ..write('priority: $priority, ')
           ..write('notes: $notes, ')
           ..write('minutes: $minutes, ')
-          ..write('recurrenceRule: $recurrenceRule')
+          ..write('recurrenceRule: $recurrenceRule, ')
+          ..write('customMeetingType: $customMeetingType')
           ..write(')'))
         .toString();
   }
@@ -1703,6 +1751,7 @@ class Meeting extends DataClass implements Insertable<Meeting> {
     notes,
     minutes,
     recurrenceRule,
+    customMeetingType,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1730,7 +1779,8 @@ class Meeting extends DataClass implements Insertable<Meeting> {
           other.priority == this.priority &&
           other.notes == this.notes &&
           other.minutes == this.minutes &&
-          other.recurrenceRule == this.recurrenceRule);
+          other.recurrenceRule == this.recurrenceRule &&
+          other.customMeetingType == this.customMeetingType);
 }
 
 class MeetingsCompanion extends UpdateCompanion<Meeting> {
@@ -1757,6 +1807,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
   final Value<String?> notes;
   final Value<String?> minutes;
   final Value<String?> recurrenceRule;
+  final Value<String?> customMeetingType;
   const MeetingsCompanion({
     this.id = const Value.absent(),
     this.syncId = const Value.absent(),
@@ -1781,6 +1832,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
     this.notes = const Value.absent(),
     this.minutes = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
+    this.customMeetingType = const Value.absent(),
   });
   MeetingsCompanion.insert({
     this.id = const Value.absent(),
@@ -1806,6 +1858,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
     this.notes = const Value.absent(),
     this.minutes = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
+    this.customMeetingType = const Value.absent(),
   }) : syncId = Value(syncId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
@@ -1836,6 +1889,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
     Expression<String>? notes,
     Expression<String>? minutes,
     Expression<String>? recurrenceRule,
+    Expression<String>? customMeetingType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1861,6 +1915,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
       if (notes != null) 'notes': notes,
       if (minutes != null) 'minutes': minutes,
       if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
+      if (customMeetingType != null) 'custom_meeting_type': customMeetingType,
     });
   }
 
@@ -1888,6 +1943,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
     Value<String?>? notes,
     Value<String?>? minutes,
     Value<String?>? recurrenceRule,
+    Value<String?>? customMeetingType,
   }) {
     return MeetingsCompanion(
       id: id ?? this.id,
@@ -1913,6 +1969,7 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
       notes: notes ?? this.notes,
       minutes: minutes ?? this.minutes,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      customMeetingType: customMeetingType ?? this.customMeetingType,
     );
   }
 
@@ -1988,6 +2045,9 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
     if (recurrenceRule.present) {
       map['recurrence_rule'] = Variable<String>(recurrenceRule.value);
     }
+    if (customMeetingType.present) {
+      map['custom_meeting_type'] = Variable<String>(customMeetingType.value);
+    }
     return map;
   }
 
@@ -2016,7 +2076,8 @@ class MeetingsCompanion extends UpdateCompanion<Meeting> {
           ..write('priority: $priority, ')
           ..write('notes: $notes, ')
           ..write('minutes: $minutes, ')
-          ..write('recurrenceRule: $recurrenceRule')
+          ..write('recurrenceRule: $recurrenceRule, ')
+          ..write('customMeetingType: $customMeetingType')
           ..write(')'))
         .toString();
   }
@@ -6050,12 +6111,34 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _hijriDateMeta = const VerificationMeta(
+    'hijriDate',
+  );
+  @override
+  late final GeneratedColumn<String> hijriDate = GeneratedColumn<String>(
+    'hijri_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _documentDateMeta = const VerificationMeta(
     'documentDate',
   );
   @override
   late final GeneratedColumn<String> documentDate = GeneratedColumn<String>(
     'document_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _directedEntityMeta = const VerificationMeta(
+    'directedEntity',
+  );
+  @override
+  late final GeneratedColumn<String> directedEntity = GeneratedColumn<String>(
+    'directed_entity',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -6092,6 +6175,15 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isConfidentialMeta = const VerificationMeta(
     'isConfidential',
   );
@@ -6117,10 +6209,13 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
     createdBy,
     title,
     referenceNumber,
+    hijriDate,
     documentDate,
+    directedEntity,
     category,
     localFilePath,
     tags,
+    notes,
     isConfidential,
   ];
   @override
@@ -6191,12 +6286,27 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
         ),
       );
     }
+    if (data.containsKey('hijri_date')) {
+      context.handle(
+        _hijriDateMeta,
+        hijriDate.isAcceptableOrUnknown(data['hijri_date']!, _hijriDateMeta),
+      );
+    }
     if (data.containsKey('document_date')) {
       context.handle(
         _documentDateMeta,
         documentDate.isAcceptableOrUnknown(
           data['document_date']!,
           _documentDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('directed_entity')) {
+      context.handle(
+        _directedEntityMeta,
+        directedEntity.isAcceptableOrUnknown(
+          data['directed_entity']!,
+          _directedEntityMeta,
         ),
       );
     }
@@ -6219,6 +6329,12 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
       context.handle(
         _tagsMeta,
         tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
     if (data.containsKey('is_confidential')) {
@@ -6271,9 +6387,17 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
         DriftSqlType.string,
         data['${effectivePrefix}reference_number'],
       ),
+      hijriDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hijri_date'],
+      ),
       documentDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}document_date'],
+      ),
+      directedEntity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}directed_entity'],
       ),
       category: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -6286,6 +6410,10 @@ class $ArchiveTable extends Archive with TableInfo<$ArchiveTable, ArchiveData> {
       tags: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}tags'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
       ),
       isConfidential: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -6325,10 +6453,16 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
   /// Reference or document number (صادر / وارد)
   final String? referenceNumber;
 
-  /// Date of the document
+  /// Date of the document in Hijri calendar
+  final String? hijriDate;
+
+  /// Date of the document in Gregorian calendar
   final String? documentDate;
 
-  /// Category (e.g., Financial, Administrative, Secret)
+  /// Directed entity / Destination
+  final String? directedEntity;
+
+  /// Category (e.g., Financial, Administrative, Secret / Memo Type)
   final String? category;
 
   /// Local file path for offline access
@@ -6336,6 +6470,9 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
 
   /// Comma-separated tags for fast search
   final String? tags;
+
+  /// General memo notes
+  final String? notes;
 
   /// Is highly confidential?
   final bool isConfidential;
@@ -6348,10 +6485,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     this.createdBy,
     required this.title,
     this.referenceNumber,
+    this.hijriDate,
     this.documentDate,
+    this.directedEntity,
     this.category,
     this.localFilePath,
     this.tags,
+    this.notes,
     required this.isConfidential,
   });
   @override
@@ -6369,8 +6509,14 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     if (!nullToAbsent || referenceNumber != null) {
       map['reference_number'] = Variable<String>(referenceNumber);
     }
+    if (!nullToAbsent || hijriDate != null) {
+      map['hijri_date'] = Variable<String>(hijriDate);
+    }
     if (!nullToAbsent || documentDate != null) {
       map['document_date'] = Variable<String>(documentDate);
+    }
+    if (!nullToAbsent || directedEntity != null) {
+      map['directed_entity'] = Variable<String>(directedEntity);
     }
     if (!nullToAbsent || category != null) {
       map['category'] = Variable<String>(category);
@@ -6380,6 +6526,9 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     }
     if (!nullToAbsent || tags != null) {
       map['tags'] = Variable<String>(tags);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     map['is_confidential'] = Variable<bool>(isConfidential);
     return map;
@@ -6399,9 +6548,15 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
       referenceNumber: referenceNumber == null && nullToAbsent
           ? const Value.absent()
           : Value(referenceNumber),
+      hijriDate: hijriDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hijriDate),
       documentDate: documentDate == null && nullToAbsent
           ? const Value.absent()
           : Value(documentDate),
+      directedEntity: directedEntity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(directedEntity),
       category: category == null && nullToAbsent
           ? const Value.absent()
           : Value(category),
@@ -6409,6 +6564,9 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
           ? const Value.absent()
           : Value(localFilePath),
       tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       isConfidential: Value(isConfidential),
     );
   }
@@ -6427,10 +6585,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
       createdBy: serializer.fromJson<String?>(json['createdBy']),
       title: serializer.fromJson<String>(json['title']),
       referenceNumber: serializer.fromJson<String?>(json['referenceNumber']),
+      hijriDate: serializer.fromJson<String?>(json['hijriDate']),
       documentDate: serializer.fromJson<String?>(json['documentDate']),
+      directedEntity: serializer.fromJson<String?>(json['directedEntity']),
       category: serializer.fromJson<String?>(json['category']),
       localFilePath: serializer.fromJson<String?>(json['localFilePath']),
       tags: serializer.fromJson<String?>(json['tags']),
+      notes: serializer.fromJson<String?>(json['notes']),
       isConfidential: serializer.fromJson<bool>(json['isConfidential']),
     );
   }
@@ -6446,10 +6607,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
       'createdBy': serializer.toJson<String?>(createdBy),
       'title': serializer.toJson<String>(title),
       'referenceNumber': serializer.toJson<String?>(referenceNumber),
+      'hijriDate': serializer.toJson<String?>(hijriDate),
       'documentDate': serializer.toJson<String?>(documentDate),
+      'directedEntity': serializer.toJson<String?>(directedEntity),
       'category': serializer.toJson<String?>(category),
       'localFilePath': serializer.toJson<String?>(localFilePath),
       'tags': serializer.toJson<String?>(tags),
+      'notes': serializer.toJson<String?>(notes),
       'isConfidential': serializer.toJson<bool>(isConfidential),
     };
   }
@@ -6463,10 +6627,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     Value<String?> createdBy = const Value.absent(),
     String? title,
     Value<String?> referenceNumber = const Value.absent(),
+    Value<String?> hijriDate = const Value.absent(),
     Value<String?> documentDate = const Value.absent(),
+    Value<String?> directedEntity = const Value.absent(),
     Value<String?> category = const Value.absent(),
     Value<String?> localFilePath = const Value.absent(),
     Value<String?> tags = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
     bool? isConfidential,
   }) => ArchiveData(
     id: id ?? this.id,
@@ -6479,12 +6646,17 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     referenceNumber: referenceNumber.present
         ? referenceNumber.value
         : this.referenceNumber,
+    hijriDate: hijriDate.present ? hijriDate.value : this.hijriDate,
     documentDate: documentDate.present ? documentDate.value : this.documentDate,
+    directedEntity: directedEntity.present
+        ? directedEntity.value
+        : this.directedEntity,
     category: category.present ? category.value : this.category,
     localFilePath: localFilePath.present
         ? localFilePath.value
         : this.localFilePath,
     tags: tags.present ? tags.value : this.tags,
+    notes: notes.present ? notes.value : this.notes,
     isConfidential: isConfidential ?? this.isConfidential,
   );
   ArchiveData copyWithCompanion(ArchiveCompanion data) {
@@ -6499,14 +6671,19 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
       referenceNumber: data.referenceNumber.present
           ? data.referenceNumber.value
           : this.referenceNumber,
+      hijriDate: data.hijriDate.present ? data.hijriDate.value : this.hijriDate,
       documentDate: data.documentDate.present
           ? data.documentDate.value
           : this.documentDate,
+      directedEntity: data.directedEntity.present
+          ? data.directedEntity.value
+          : this.directedEntity,
       category: data.category.present ? data.category.value : this.category,
       localFilePath: data.localFilePath.present
           ? data.localFilePath.value
           : this.localFilePath,
       tags: data.tags.present ? data.tags.value : this.tags,
+      notes: data.notes.present ? data.notes.value : this.notes,
       isConfidential: data.isConfidential.present
           ? data.isConfidential.value
           : this.isConfidential,
@@ -6524,10 +6701,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
           ..write('createdBy: $createdBy, ')
           ..write('title: $title, ')
           ..write('referenceNumber: $referenceNumber, ')
+          ..write('hijriDate: $hijriDate, ')
           ..write('documentDate: $documentDate, ')
+          ..write('directedEntity: $directedEntity, ')
           ..write('category: $category, ')
           ..write('localFilePath: $localFilePath, ')
           ..write('tags: $tags, ')
+          ..write('notes: $notes, ')
           ..write('isConfidential: $isConfidential')
           ..write(')'))
         .toString();
@@ -6543,10 +6723,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
     createdBy,
     title,
     referenceNumber,
+    hijriDate,
     documentDate,
+    directedEntity,
     category,
     localFilePath,
     tags,
+    notes,
     isConfidential,
   );
   @override
@@ -6561,10 +6744,13 @@ class ArchiveData extends DataClass implements Insertable<ArchiveData> {
           other.createdBy == this.createdBy &&
           other.title == this.title &&
           other.referenceNumber == this.referenceNumber &&
+          other.hijriDate == this.hijriDate &&
           other.documentDate == this.documentDate &&
+          other.directedEntity == this.directedEntity &&
           other.category == this.category &&
           other.localFilePath == this.localFilePath &&
           other.tags == this.tags &&
+          other.notes == this.notes &&
           other.isConfidential == this.isConfidential);
 }
 
@@ -6577,10 +6763,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
   final Value<String?> createdBy;
   final Value<String> title;
   final Value<String?> referenceNumber;
+  final Value<String?> hijriDate;
   final Value<String?> documentDate;
+  final Value<String?> directedEntity;
   final Value<String?> category;
   final Value<String?> localFilePath;
   final Value<String?> tags;
+  final Value<String?> notes;
   final Value<bool> isConfidential;
   const ArchiveCompanion({
     this.id = const Value.absent(),
@@ -6591,10 +6780,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     this.createdBy = const Value.absent(),
     this.title = const Value.absent(),
     this.referenceNumber = const Value.absent(),
+    this.hijriDate = const Value.absent(),
     this.documentDate = const Value.absent(),
+    this.directedEntity = const Value.absent(),
     this.category = const Value.absent(),
     this.localFilePath = const Value.absent(),
     this.tags = const Value.absent(),
+    this.notes = const Value.absent(),
     this.isConfidential = const Value.absent(),
   });
   ArchiveCompanion.insert({
@@ -6606,10 +6798,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     this.createdBy = const Value.absent(),
     required String title,
     this.referenceNumber = const Value.absent(),
+    this.hijriDate = const Value.absent(),
     this.documentDate = const Value.absent(),
+    this.directedEntity = const Value.absent(),
     this.category = const Value.absent(),
     this.localFilePath = const Value.absent(),
     this.tags = const Value.absent(),
+    this.notes = const Value.absent(),
     this.isConfidential = const Value.absent(),
   }) : syncId = Value(syncId),
        createdAt = Value(createdAt),
@@ -6624,10 +6819,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     Expression<String>? createdBy,
     Expression<String>? title,
     Expression<String>? referenceNumber,
+    Expression<String>? hijriDate,
     Expression<String>? documentDate,
+    Expression<String>? directedEntity,
     Expression<String>? category,
     Expression<String>? localFilePath,
     Expression<String>? tags,
+    Expression<String>? notes,
     Expression<bool>? isConfidential,
   }) {
     return RawValuesInsertable({
@@ -6639,10 +6837,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
       if (createdBy != null) 'created_by': createdBy,
       if (title != null) 'title': title,
       if (referenceNumber != null) 'reference_number': referenceNumber,
+      if (hijriDate != null) 'hijri_date': hijriDate,
       if (documentDate != null) 'document_date': documentDate,
+      if (directedEntity != null) 'directed_entity': directedEntity,
       if (category != null) 'category': category,
       if (localFilePath != null) 'local_file_path': localFilePath,
       if (tags != null) 'tags': tags,
+      if (notes != null) 'notes': notes,
       if (isConfidential != null) 'is_confidential': isConfidential,
     });
   }
@@ -6656,10 +6857,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     Value<String?>? createdBy,
     Value<String>? title,
     Value<String?>? referenceNumber,
+    Value<String?>? hijriDate,
     Value<String?>? documentDate,
+    Value<String?>? directedEntity,
     Value<String?>? category,
     Value<String?>? localFilePath,
     Value<String?>? tags,
+    Value<String?>? notes,
     Value<bool>? isConfidential,
   }) {
     return ArchiveCompanion(
@@ -6671,10 +6875,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
       createdBy: createdBy ?? this.createdBy,
       title: title ?? this.title,
       referenceNumber: referenceNumber ?? this.referenceNumber,
+      hijriDate: hijriDate ?? this.hijriDate,
       documentDate: documentDate ?? this.documentDate,
+      directedEntity: directedEntity ?? this.directedEntity,
       category: category ?? this.category,
       localFilePath: localFilePath ?? this.localFilePath,
       tags: tags ?? this.tags,
+      notes: notes ?? this.notes,
       isConfidential: isConfidential ?? this.isConfidential,
     );
   }
@@ -6706,8 +6913,14 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     if (referenceNumber.present) {
       map['reference_number'] = Variable<String>(referenceNumber.value);
     }
+    if (hijriDate.present) {
+      map['hijri_date'] = Variable<String>(hijriDate.value);
+    }
     if (documentDate.present) {
       map['document_date'] = Variable<String>(documentDate.value);
+    }
+    if (directedEntity.present) {
+      map['directed_entity'] = Variable<String>(directedEntity.value);
     }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
@@ -6717,6 +6930,9 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
     }
     if (tags.present) {
       map['tags'] = Variable<String>(tags.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (isConfidential.present) {
       map['is_confidential'] = Variable<bool>(isConfidential.value);
@@ -6735,10 +6951,13 @@ class ArchiveCompanion extends UpdateCompanion<ArchiveData> {
           ..write('createdBy: $createdBy, ')
           ..write('title: $title, ')
           ..write('referenceNumber: $referenceNumber, ')
+          ..write('hijriDate: $hijriDate, ')
           ..write('documentDate: $documentDate, ')
+          ..write('directedEntity: $directedEntity, ')
           ..write('category: $category, ')
           ..write('localFilePath: $localFilePath, ')
           ..write('tags: $tags, ')
+          ..write('notes: $notes, ')
           ..write('isConfidential: $isConfidential')
           ..write(')'))
         .toString();
@@ -11223,6 +11442,7 @@ typedef $$MeetingsTableCreateCompanionBuilder =
       Value<String?> notes,
       Value<String?> minutes,
       Value<String?> recurrenceRule,
+      Value<String?> customMeetingType,
     });
 typedef $$MeetingsTableUpdateCompanionBuilder =
     MeetingsCompanion Function({
@@ -11249,6 +11469,7 @@ typedef $$MeetingsTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<String?> minutes,
       Value<String?> recurrenceRule,
+      Value<String?> customMeetingType,
     });
 
 class $$MeetingsTableFilterComposer
@@ -11372,6 +11593,11 @@ class $$MeetingsTableFilterComposer
 
   ColumnFilters<String> get recurrenceRule => $composableBuilder(
     column: $table.recurrenceRule,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customMeetingType => $composableBuilder(
+    column: $table.customMeetingType,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11499,6 +11725,11 @@ class $$MeetingsTableOrderingComposer
     column: $table.recurrenceRule,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get customMeetingType => $composableBuilder(
+    column: $table.customMeetingType,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MeetingsTableAnnotationComposer
@@ -11584,6 +11815,11 @@ class $$MeetingsTableAnnotationComposer
     column: $table.recurrenceRule,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get customMeetingType => $composableBuilder(
+    column: $table.customMeetingType,
+    builder: (column) => column,
+  );
 }
 
 class $$MeetingsTableTableManager
@@ -11637,6 +11873,7 @@ class $$MeetingsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> minutes = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
+                Value<String?> customMeetingType = const Value.absent(),
               }) => MeetingsCompanion(
                 id: id,
                 syncId: syncId,
@@ -11661,6 +11898,7 @@ class $$MeetingsTableTableManager
                 notes: notes,
                 minutes: minutes,
                 recurrenceRule: recurrenceRule,
+                customMeetingType: customMeetingType,
               ),
           createCompanionCallback:
               ({
@@ -11687,6 +11925,7 @@ class $$MeetingsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> minutes = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
+                Value<String?> customMeetingType = const Value.absent(),
               }) => MeetingsCompanion.insert(
                 id: id,
                 syncId: syncId,
@@ -11711,6 +11950,7 @@ class $$MeetingsTableTableManager
                 notes: notes,
                 minutes: minutes,
                 recurrenceRule: recurrenceRule,
+                customMeetingType: customMeetingType,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -13489,10 +13729,13 @@ typedef $$ArchiveTableCreateCompanionBuilder =
       Value<String?> createdBy,
       required String title,
       Value<String?> referenceNumber,
+      Value<String?> hijriDate,
       Value<String?> documentDate,
+      Value<String?> directedEntity,
       Value<String?> category,
       Value<String?> localFilePath,
       Value<String?> tags,
+      Value<String?> notes,
       Value<bool> isConfidential,
     });
 typedef $$ArchiveTableUpdateCompanionBuilder =
@@ -13505,10 +13748,13 @@ typedef $$ArchiveTableUpdateCompanionBuilder =
       Value<String?> createdBy,
       Value<String> title,
       Value<String?> referenceNumber,
+      Value<String?> hijriDate,
       Value<String?> documentDate,
+      Value<String?> directedEntity,
       Value<String?> category,
       Value<String?> localFilePath,
       Value<String?> tags,
+      Value<String?> notes,
       Value<bool> isConfidential,
     });
 
@@ -13561,8 +13807,18 @@ class $$ArchiveTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get hijriDate => $composableBuilder(
+    column: $table.hijriDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get documentDate => $composableBuilder(
     column: $table.documentDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get directedEntity => $composableBuilder(
+    column: $table.directedEntity,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13578,6 +13834,11 @@ class $$ArchiveTableFilterComposer
 
   ColumnFilters<String> get tags => $composableBuilder(
     column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13636,8 +13897,18 @@ class $$ArchiveTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get hijriDate => $composableBuilder(
+    column: $table.hijriDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get documentDate => $composableBuilder(
     column: $table.documentDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get directedEntity => $composableBuilder(
+    column: $table.directedEntity,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13653,6 +13924,11 @@ class $$ArchiveTableOrderingComposer
 
   ColumnOrderings<String> get tags => $composableBuilder(
     column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13697,8 +13973,16 @@ class $$ArchiveTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get hijriDate =>
+      $composableBuilder(column: $table.hijriDate, builder: (column) => column);
+
   GeneratedColumn<String> get documentDate => $composableBuilder(
     column: $table.documentDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get directedEntity => $composableBuilder(
+    column: $table.directedEntity,
     builder: (column) => column,
   );
 
@@ -13712,6 +13996,9 @@ class $$ArchiveTableAnnotationComposer
 
   GeneratedColumn<String> get tags =>
       $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<bool> get isConfidential => $composableBuilder(
     column: $table.isConfidential,
@@ -13758,10 +14045,13 @@ class $$ArchiveTableTableManager
                 Value<String?> createdBy = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> referenceNumber = const Value.absent(),
+                Value<String?> hijriDate = const Value.absent(),
                 Value<String?> documentDate = const Value.absent(),
+                Value<String?> directedEntity = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> localFilePath = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<bool> isConfidential = const Value.absent(),
               }) => ArchiveCompanion(
                 id: id,
@@ -13772,10 +14062,13 @@ class $$ArchiveTableTableManager
                 createdBy: createdBy,
                 title: title,
                 referenceNumber: referenceNumber,
+                hijriDate: hijriDate,
                 documentDate: documentDate,
+                directedEntity: directedEntity,
                 category: category,
                 localFilePath: localFilePath,
                 tags: tags,
+                notes: notes,
                 isConfidential: isConfidential,
               ),
           createCompanionCallback:
@@ -13788,10 +14081,13 @@ class $$ArchiveTableTableManager
                 Value<String?> createdBy = const Value.absent(),
                 required String title,
                 Value<String?> referenceNumber = const Value.absent(),
+                Value<String?> hijriDate = const Value.absent(),
                 Value<String?> documentDate = const Value.absent(),
+                Value<String?> directedEntity = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> localFilePath = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<bool> isConfidential = const Value.absent(),
               }) => ArchiveCompanion.insert(
                 id: id,
@@ -13802,10 +14098,13 @@ class $$ArchiveTableTableManager
                 createdBy: createdBy,
                 title: title,
                 referenceNumber: referenceNumber,
+                hijriDate: hijriDate,
                 documentDate: documentDate,
+                directedEntity: directedEntity,
                 category: category,
                 localFilePath: localFilePath,
                 tags: tags,
+                notes: notes,
                 isConfidential: isConfidential,
               ),
           withReferenceMapper: (p0) => p0

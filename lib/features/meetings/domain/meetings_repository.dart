@@ -44,6 +44,7 @@ class MeetingsRepository {
   Future<int> createMeeting({
     required String title,
     required MeetingType type,
+    String? customMeetingType,
     required DateTime date,
     required String time,
     required Priority priority,
@@ -61,6 +62,7 @@ class MeetingsRepository {
         syncId: _uuid.v4(),
         title: title,
         meetingType: drift.Value(type.value),
+        customMeetingType: drift.Value(customMeetingType),
         date: date.toIso8601String().split('T').first,
         time: time,
         location: drift.Value(location),
@@ -85,6 +87,7 @@ class MeetingsRepository {
     required int id,
     required String title,
     required MeetingType type,
+    String? customMeetingType,
     required DateTime date,
     required String time,
     required Priority priority,
@@ -98,6 +101,7 @@ class MeetingsRepository {
       MeetingsCompanion(
         title: drift.Value(title),
         meetingType: drift.Value(type.value),
+        customMeetingType: drift.Value(customMeetingType),
         date: drift.Value(date.toIso8601String().split('T').first),
         time: drift.Value(time),
         location: drift.Value(location),

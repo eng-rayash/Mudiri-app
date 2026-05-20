@@ -18,4 +18,12 @@ class CallsDao extends DatabaseAccessor<AppDatabase> with _$CallsDaoMixin {
       (select(calls)..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
           .watch();
+
+  Future<void> softDelete(int id) =>
+      (update(calls)..where((c) => c.id.equals(id))).write(
+        CallsCompanion(
+          isDeleted: const Value(true),
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
 }

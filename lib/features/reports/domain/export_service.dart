@@ -393,7 +393,7 @@ class ExportService {
                     ),
                     columnWidths: {
                       for (int i = 0; i < shapedHeaders.length; i++)
-                        i: _getColumnWidth(headers[i]),
+                        i: _getColumnWidth(headers[shapedHeaders.length - 1 - i]),
                     },
                     children: [
                       // Header Row
@@ -422,7 +422,7 @@ class ExportService {
                               ),
                             ),
                           );
-                        }),
+                        }).reversed.toList(),
                       ),
                       // Data Rows
                       ...List.generate(shapedRows.length, (rowIdx) {
@@ -452,7 +452,7 @@ class ExportService {
                                 ),
                               ),
                             );
-                          }),
+                          }).reversed.toList(),
                         );
                       }),
                     ],

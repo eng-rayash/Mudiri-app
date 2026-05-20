@@ -5,12 +5,12 @@ import '../../features/appointments/presentation/appointments_list_screen.dart';
 import '../../features/appointments/presentation/create_appointment_screen.dart';
 import '../../features/archive/presentation/archive_list_screen.dart';
 import '../../features/archive/presentation/create_archive_screen.dart';
+import '../../features/archive/presentation/archive_pdf_viewer_screen.dart';
 import '../../features/auth/presentation/change_pin_page.dart';
 import '../../features/auth/presentation/lock_screen.dart';
 import '../../features/auth/presentation/pin_setup_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/calls/presentation/calls_list_screen.dart';
-import '../../features/contacts/presentation/contacts_list_screen.dart';
 import '../../features/contacts/presentation/create_contact_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/directives/presentation/pages/create_directive_page.dart';
@@ -107,9 +107,9 @@ class AppRouter {
             ),
           ),
           GoRoute(
-            path: RouteNames.contactsListFull,
+            path: RouteNames.archiveListFull,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ContactsListScreen(),
+              child: ArchiveListScreen(),
             ),
           ),
         ],
@@ -131,14 +131,19 @@ class AppRouter {
         builder: (context, state) => const CreateAppointmentScreen(),
       ),
 
-      // ─── Archive Routes ───
-      GoRoute(
-        path: RouteNames.archiveList,
-        builder: (context, state) => const ArchiveListScreen(),
-      ),
       GoRoute(
         path: RouteNames.archiveCreate,
         builder: (context, state) => const CreateArchiveScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.archivePdfViewer,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return ArchivePdfViewerScreen(
+            pdfPath: extra['pdfPath'] as String,
+            title: extra['title'] as String,
+          );
+        },
       ),
 
       // ─── Call Routes ───

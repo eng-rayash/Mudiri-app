@@ -14,6 +14,9 @@ import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
 import '../providers/meetings_provider.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/constants/enums.dart';
+import '../../../shared/widgets/neu_button.dart';
+import '../domain/meetings_repository.dart';
 
 /// Meetings List Screen — displays all meetings with search, filter, multi-select, and export.
 class MeetingsListScreen extends ConsumerStatefulWidget {
@@ -67,7 +70,7 @@ class _MeetingsListScreenState
                 padding: AppSpacing.screen,
                 child: meetingsAsync.when(
                   loading: () => _buildNormalHeader(isDark),
-                  error: (_, __) => _buildNormalHeader(isDark),
+                  error: (_, _) => _buildNormalHeader(isDark),
                   data: (meetings) {
                     var filtered = _applyFilters(meetings);
                     if (_selectedIds.isNotEmpty) {
@@ -127,6 +130,25 @@ class _MeetingsListScreenState
                               ),
                             ),
                           ),
+                          // Delete Button
+                          GestureDetector(
+                            onTap: () => _confirmDeleteSelected(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? NeuColors.surfaceDark
+                                    : NeuColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: NeuColors.priorityCritical,
+                                size: 22,
+                              ),
+                            ),
+                          ),
                           // Export Button
                           ExportButton(
                             itemCount: _selectedIds.length,
@@ -157,13 +179,7 @@ class _MeetingsListScreenState
                                 itemMapper: (items) => items.asMap().entries.map((entry) {
                                   final i = entry.key + 1;
                                   final m = entry.value;
-                                  String typeStr = 'عام';
-                                  if (m.meetingType == 1) typeStr = 'إداري';
-                                  if (m.meetingType == 2) typeStr = 'طوارئ';
-                                  if (m.meetingType == 3) typeStr = 'مراجعة';
-                                  if (m.meetingType == 4) typeStr = 'تخطيط';
-                                  if (m.meetingType == 5) typeStr = 'متابعة';
-                                  if (m.meetingType == 6) typeStr = 'خارجي';
+                                  String typeStr = m.customMeetingType ?? MeetingType.fromValue(m.meetingType).arabicLabel;
                                   
                                   return [
                                     i.toString(),
@@ -302,10 +318,26 @@ class _MeetingsListScreenState
                                                 ? AppTypography.h4Dark
                                                 : AppTypography.h4,
                                             maxLines: 1,
-                                            overflow:
-                                                TextOverflow.ellipsis,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
+                                        AppSpacing.gapHMd,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: (isDark ? NeuColors.goldAccent : NeuColors.navyDeep).withAlpha(25),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            meeting.customMeetingType ?? MeetingType.fromValue(meeting.meetingType).arabicLabel,
+                                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                                              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                        AppSpacing.gapHSm,
                                         StatusBadge
                                             .fromMeetingStatus(
                                                 meeting.status),
@@ -463,5 +495,99 @@ class _MeetingsListScreenState
     }
 
     return filtered;
+  }
+
+  Future<void> _confirmDeleteSelected(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: NeuColors.priorityCritical,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'تأكيد الحذف',
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+                      color: NeuColors.priorityCritical,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'هل أنت متأكد من رغبتك في حذف الاجتماعات المحددة (${_selectedIds.length})؟ لا يمكن التراجع عن هذا الإجراء.',
+                    style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await _deleteSelectedItems();
+                          },
+                          label: 'حذف',
+                          variant: NeuButtonVariant.danger,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          label: 'إلغاء',
+                          variant: NeuButtonVariant.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteSelectedItems() async {
+    try {
+      final repo = ref.read(meetingsRepositoryProvider);
+      for (final id in _selectedIds) {
+        await repo.deleteMeeting(id);
+      }
+      setState(() {
+        _selectedIds.clear();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الاجتماعات المحددة بنجاح', textDirection: TextDirection.rtl),
+            backgroundColor: NeuColors.priorityCritical,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ أثناء الحذف: $e', textDirection: TextDirection.rtl),
+            backgroundColor: NeuColors.priorityCritical,
+          ),
+        );
+      }
+    }
   }
 }
