@@ -7,6 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_input.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
@@ -413,88 +414,160 @@ class _CallsListScreenState
               left: 24,
               right: 24,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('تسجيل مكالمة جديدة',
-                    style: isDark
-                        ? AppTypography.h3Dark
-                        : AppTypography.h3),
-                AppSpacing.gapLg,
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'اسم المتصل',
-                      border: OutlineInputBorder()),
-                ),
-                AppSpacing.gapMd,
-                TextField(
-                  controller: summaryCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'ملخص المكالمة',
-                      border: OutlineInputBorder()),
-                ),
-                AppSpacing.gapMd,
-                DropdownButtonFormField<int>(
-                  initialValue: selectedType,
-                  items: const [
-                    DropdownMenuItem(
-                        value: 0,
-                        child: Text('مكالمة واردة')),
-                    DropdownMenuItem(
-                        value: 1,
-                        child: Text('مكالمة صادرة')),
-                    DropdownMenuItem(
-                        value: 2,
-                        child: Text('مكالمة فائتة')),
-                  ],
-                  onChanged: (val) => setModalState(
-                      () => selectedType = val ?? 0),
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder()),
-                ),
-                AppSpacing.gapMd,
-                SwitchListTile(
-                  title: Text('مكالمة هامة',
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('تسجيل مكالمة جديدة',
                       style: isDark
-                          ? AppTypography.bodyDark
-                          : AppTypography.body),
-                  value: isImportant,
-                  onChanged: (val) =>
-                      setModalState(() => isImportant = val),
-                  activeTrackColor: NeuColors.goldAccent,
-                  activeThumbColor: NeuColors.navyDeep,
-                ),
-                AppSpacing.gapLg,
-                SizedBox(
-                  width: double.infinity,
-                  child: NeuButton(
-                    label: 'حفظ المكالمة',
+                          ? AppTypography.h3Dark
+                          : AppTypography.h3,
+                      textAlign: TextAlign.center),
+                  AppSpacing.gapLg,
+                  NeuInput(
+                    controller: nameCtrl,
+                    label: 'اسم المتصل *',
+                    hint: 'أدخل اسم المتصل أو الجهة',
+                    prefixIcon: Icons.phone_rounded,
+                  ),
+                  AppSpacing.gapMd,
+                  NeuInput(
+                    controller: summaryCtrl,
+                    label: 'ملخص المكالمة',
+                    hint: 'أدخل تفاصيل ومخرجات المكالمة',
+                    prefixIcon: Icons.description_rounded,
+                    maxLines: 2,
+                  ),
+                  AppSpacing.gapMd,
+                  Text(
+                    'نوع المكالمة',
+                    style: isDark ? AppTypography.labelDark : AppTypography.label,
+                  ),
+                  AppSpacing.gapSm,
+                  NeuCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Row(
+                      children: [
+                        _buildTypeSegment(
+                          index: 0,
+                          label: 'واردة',
+                          selectedIndex: selectedType,
+                          isDark: isDark,
+                          onTap: () => setModalState(() => selectedType = 0),
+                        ),
+                        _buildTypeSegment(
+                          index: 1,
+                          label: 'صادرة',
+                          selectedIndex: selectedType,
+                          isDark: isDark,
+                          onTap: () => setModalState(() => selectedType = 1),
+                        ),
+                        _buildTypeSegment(
+                          index: 2,
+                          label: 'فائتة',
+                          selectedIndex: selectedType,
+                          isDark: isDark,
+                          onTap: () => setModalState(() => selectedType = 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppSpacing.gapMd,
+                  NeuCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.star_rounded, 
+                              color: isImportant ? NeuColors.goldAccent : NeuColors.textHint),
+                            const SizedBox(width: 12),
+                            Text(
+                              'مكالمة هامة وعاجلة',
+                              style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        Switch.adaptive(
+                          value: isImportant,
+                          onChanged: (val) => setModalState(() => isImportant = val),
+                          activeThumbColor: NeuColors.goldAccent,
+                          activeTrackColor: NeuColors.goldAccent.withAlpha(100),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppSpacing.gapXl,
+                  NeuButton(
+                    label: 'حفظ سجل المكالمة',
+                    icon: Icons.save_rounded,
                     onPressed: () {
-                      if (nameCtrl.text.isEmpty) return;
+                      if (nameCtrl.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('اسم المتصل مطلوب لحفظ سجل المكالمة', textDirection: TextDirection.rtl),
+                            backgroundColor: NeuColors.priorityCritical,
+                          ),
+                        );
+                        return;
+                      }
                       final now = DateTime.now();
-                      ref
-                          .read(callsRepositoryProvider)
-                          .logCall(
-                            callerName: nameCtrl.text,
+                      ref.read(callsRepositoryProvider).logCall(
+                            callerName: nameCtrl.text.trim(),
                             callType: selectedType,
-                            date:
-                                '${now.year}-${now.month}-${now.day}',
-                            time:
-                                '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
-                            summary: summaryCtrl.text,
+                            date: '${now.year}-${now.month}-${now.day}',
+                            time: '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
+                            summary: summaryCtrl.text.trim(),
                             isImportant: isImportant,
                           );
                       ctx.pop();
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         });
       },
+    );
+  }
+
+  Widget _buildTypeSegment({
+    required int index,
+    required String label,
+    required int selectedIndex,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = selectedIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? NeuColors.goldAccent.withAlpha(50) : NeuColors.navyDeep)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
     );
   }
 

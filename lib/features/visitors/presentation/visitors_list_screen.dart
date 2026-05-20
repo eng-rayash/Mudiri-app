@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_input.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../domain/visitors_repository.dart';
 import '../../../shared/widgets/export_button.dart';
@@ -365,52 +366,84 @@ class _VisitorsListScreenState
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
-        title: Text('دخول زائر جديد',
-            style: isDark
-                ? AppTypography.h3Dark
-                : AppTypography.h3),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-                controller: nameCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'اسم الزائر')),
-            AppSpacing.gapSm,
-            TextField(
-                controller: companyCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'الجهة / الشركة')),
-            AppSpacing.gapSm,
-            TextField(
-                controller: purposeCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'سبب الزيارة')),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء')),
-          NeuButton(
-            label: 'تسجيل الدخول',
-            onPressed: () {
-              if (nameCtrl.text.isNotEmpty) {
-                ref
-                    .read(visitorsRepositoryProvider)
-                    .registerVisitor(
-                      visitorName: nameCtrl.text,
-                      company: companyCtrl.text,
-                      purpose: purposeCtrl.text,
-                    );
-                Navigator.pop(ctx);
-              }
-            },
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: SingleChildScrollView(
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'تسجيل دخول زائر جديد',
+                    style: isDark ? AppTypography.h3Dark : AppTypography.h3,
+                    textAlign: TextAlign.center,
+                  ),
+                  AppSpacing.gapLg,
+                  NeuInput(
+                    controller: nameCtrl,
+                    label: 'اسم الزائر *',
+                    hint: 'أدخل الاسم الثلاثي للزائر',
+                    prefixIcon: Icons.person_rounded,
+                  ),
+                  AppSpacing.gapMd,
+                  NeuInput(
+                    controller: companyCtrl,
+                    label: 'الجهة / الشركة',
+                    hint: 'اسم الجهة أو الشركة التابع لها',
+                    prefixIcon: Icons.business_rounded,
+                  ),
+                  AppSpacing.gapMd,
+                  NeuInput(
+                    controller: purposeCtrl,
+                    label: 'سبب الزيارة',
+                    hint: 'الغرض أو موعد المقابلة',
+                    prefixIcon: Icons.description_rounded,
+                  ),
+                  AppSpacing.gapXl,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () {
+                            if (nameCtrl.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('اسم الزائر مطلوب لتسجيل الدخول', textDirection: TextDirection.rtl),
+                                  backgroundColor: NeuColors.priorityCritical,
+                                ),
+                              );
+                              return;
+                            }
+                            ref.read(visitorsRepositoryProvider).registerVisitor(
+                                  visitorName: nameCtrl.text.trim(),
+                                  company: companyCtrl.text.trim(),
+                                  purpose: purposeCtrl.text.trim(),
+                                );
+                            Navigator.pop(ctx);
+                          },
+                          label: 'تسجيل الدخول',
+                          icon: Icons.check_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          label: 'إلغاء',
+                          variant: NeuButtonVariant.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

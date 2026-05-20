@@ -21,7 +21,6 @@ class AppShellScaffold extends StatelessWidget {
   static const _navItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'الرئيسية', path: RouteNames.dashboardFull),
     _NavItem(icon: Icons.groups_rounded, label: 'الاجتماعات', path: RouteNames.meetingsListFull),
-    _NavItem(icon: Icons.task_alt_rounded, label: 'المهام', path: RouteNames.tasksListFull),
     _NavItem(icon: Icons.replay_rounded, label: 'المتابعات', path: RouteNames.followupsListFull),
     _NavItem(icon: Icons.archive_rounded, label: 'أرشيف المذكرات', path: RouteNames.archiveListFull),
   ];

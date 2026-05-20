@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -382,14 +383,63 @@ class _AppointmentsListScreenState
         ),
       ),
       floatingActionButton: _selectedIds.isEmpty
-          ? FloatingActionButton(
-              onPressed: () =>
-                  context.push(RouteNames.appointmentCreate),
-              backgroundColor: NeuColors.navyDeep,
-              child: const Icon(Icons.add_rounded,
-                  color: Colors.white),
-            )
+          ? _buildNeuFab(context, isDark)
           : null,
+    );
+  }
+
+  Widget _buildNeuFab(BuildContext context, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push(RouteNames.appointmentCreate);
+      },
+      child: Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [NeuColors.navyMid, NeuColors.navyDeep],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: NeuColors.navyDeep.withAlpha(90),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            if (!isDark)
+              BoxShadow(
+                color: NeuColors.goldAccent.withAlpha(30),
+                blurRadius: 16,
+                offset: const Offset(0, 3),
+              ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: NeuColors.goldAccent.withAlpha(50),
+                  width: 1.5,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.add_rounded,
+              color: NeuColors.goldAccent,
+              size: 28,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

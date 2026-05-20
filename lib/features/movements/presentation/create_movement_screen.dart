@@ -10,6 +10,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_input.dart';
 
 /// Create Movement Screen — تحرك
 ///
@@ -193,28 +194,24 @@ class _CreateMovementScreenState
               AppSpacing.gapLg,
 
               // Destination
-              _buildLabel('الوجهة / المكان', isDark),
-              AppSpacing.gapSm,
-              _buildTextField(
+              NeuInput(
                 controller: _destinationCtrl,
+                label: 'الوجهة / المكان',
                 hint: 'أدخل المكان أو الوجهة',
-                icon: Icons.location_on_rounded,
+                prefixIcon: Icons.location_on_rounded,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'الوجهة مطلوبة' : null,
-                isDark: isDark,
               ),
 
               AppSpacing.gapLg,
 
               // Purpose
-              _buildLabel('الغرض / المهمة', isDark),
-              AppSpacing.gapSm,
-              _buildTextField(
+              NeuInput(
                 controller: _purposeCtrl,
+                label: 'الغرض / المهمة',
                 hint: 'اكتب الغرض من التحرك',
-                icon: Icons.article_rounded,
+                prefixIcon: Icons.article_rounded,
                 maxLines: 2,
-                isDark: isDark,
               ),
 
               AppSpacing.gapLg,
@@ -293,14 +290,12 @@ class _CreateMovementScreenState
               AppSpacing.gapLg,
 
               // Notes
-              _buildLabel('ملاحظات إضافية', isDark),
-              AppSpacing.gapSm,
-              _buildTextField(
+              NeuInput(
                 controller: _notesCtrl,
+                label: 'ملاحظات إضافية',
                 hint: 'أي ملاحظات تتعلق بالتحرك...',
-                icon: Icons.notes_rounded,
+                prefixIcon: Icons.notes_rounded,
                 maxLines: 3,
-                isDark: isDark,
               ),
 
               AppSpacing.gapXxl,
@@ -326,54 +321,4 @@ class _CreateMovementScreenState
         text,
         style: isDark ? AppTypography.labelDark : AppTypography.label,
       );
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-    required bool isDark,
-  }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      validator: validator,
-      style: isDark ? AppTypography.bodyDark : AppTypography.body,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: isDark
-            ? AppTypography.captionDark
-            : AppTypography.caption,
-        prefixIcon: Icon(
-          icon,
-          color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
-          size: 20,
-        ),
-        filled: true,
-        fillColor: isDark ? NeuColors.surfaceDark : NeuColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: NeuColors.goldAccent, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide:
-              const BorderSide(color: NeuColors.danger, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide:
-              const BorderSide(color: NeuColors.danger, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 14),
-      ),
-    );
-  }
 }

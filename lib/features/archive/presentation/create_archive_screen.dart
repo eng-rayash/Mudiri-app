@@ -195,8 +195,15 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
     final pdf = pw.Document();
     
     for (final file in _capturedImages) {
-      // Use flutterImageProvider to safely decode all image formats (e.g. HEIC) and apply EXIF rotation
-      final pdfImage = await flutterImageProvider(FileImage(file));
+      pw.ImageProvider pdfImage;
+      try {
+        // Use flutterImageProvider to safely decode all image formats (e.g. HEIC) and apply EXIF rotation
+        pdfImage = await flutterImageProvider(FileImage(file));
+      } catch (e) {
+        // Fallback to direct file bytes using pw.MemoryImage if flutterImageProvider fails
+        final bytes = await file.readAsBytes();
+        pdfImage = pw.MemoryImage(bytes);
+      }
 
       pdf.addPage(
         pw.Page(

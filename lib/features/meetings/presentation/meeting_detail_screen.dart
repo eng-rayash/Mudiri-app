@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -157,21 +159,35 @@ class MeetingDetailScreen extends ConsumerWidget {
                   AppSpacing.gapMd,
                 ],
 
-                // Placeholder for Agenda & Decisions (Phase 2/3)
-                NeuCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('جدول الأعمال والقرارات', style: isDark ? AppTypography.h4Dark : AppTypography.h4),
-                      AppSpacing.gapSm,
-                      Text(
-                        'سيتم إضافة جدول الأعمال والقرارات في المرحلة القادمة.', 
-                        style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
-                          color: isDark ? NeuColors.textHintDark : NeuColors.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
+                // الحاضرون
+                _buildListSection(
+                  context: context,
+                  icon: Icons.groups_rounded,
+                  title: 'قائمة الحضور',
+                  items: _decodeJsonList(meeting.attendees),
+                  isNumbered: false,
+                  isDark: isDark,
+                ),
+
+                // جدول الأعمال
+                _buildListSection(
+                  context: context,
+                  icon: Icons.list_alt_rounded,
+                  title: 'جدول الأعمال',
+                  items: _decodeJsonList(meeting.agenda),
+                  isNumbered: true,
+                  isDark: isDark,
+                ),
+
+                // القرارات والتوصيات
+                _buildListSection(
+                  context: context,
+                  icon: Icons.gavel_rounded,
+                  title: 'القرارات والتوصيات',
+                  items: _decodeJsonList(meeting.decisions),
+                  isNumbered: true,
+                  isDark: isDark,
+                  accentColor: NeuColors.goldAccent,
                 ),
                 AppSpacing.gapXxl,
               ],
@@ -179,6 +195,112 @@ class MeetingDetailScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+
+  List<String> _decodeJsonList(String? jsonStr) {
+    if (jsonStr == null || jsonStr.isEmpty || jsonStr == '[]') return [];
+    try {
+      final decoded = json.decode(jsonStr);
+      if (decoded is List) {
+        return decoded.map((e) {
+          if (e is Map) {
+            final name = e['name']?.toString() ?? '';
+            final role = e['role']?.toString() ?? '';
+            return role.isNotEmpty ? '$name ($role)' : name;
+          }
+          return e.toString();
+        }).where((s) => s.isNotEmpty).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Widget _buildListSection({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required List<String> items,
+    required bool isNumbered,
+    required bool isDark,
+    Color? accentColor,
+  }) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final color = accentColor ?? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        NeuCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(isDark ? 25 : 15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 18, color: color),
+                  ),
+                  AppSpacing.gapHSm,
+                  Text(
+                    title,
+                    style: isDark ? AppTypography.h4Dark : AppTypography.h4,
+                  ),
+                ],
+              ),
+              AppSpacing.gapMd,
+              Column(
+                children: items.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final item = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: color.withAlpha(isDark ? 20 : 12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: isNumbered
+                                ? Text(
+                                    '${idx + 1}',
+                                    style: AppTypography.caption.copyWith(
+                                      color: color,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  )
+                                : Icon(Icons.person_rounded, size: 12, color: color),
+                          ),
+                        ),
+                        AppSpacing.gapHSm,
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        AppSpacing.gapMd,
+      ],
     );
   }
 
