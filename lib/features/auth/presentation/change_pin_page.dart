@@ -9,7 +9,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../core/theme/neu_decorations.dart';
 
-
 /// Change PIN Page — 3-step flow:
 /// 1. Enter current PIN
 /// 2. Enter new PIN
@@ -97,8 +96,7 @@ class _ChangePinPageState extends State<ChangePinPage> {
       switch (_step) {
         case _ChangePinStep.current:
           if (_currentPin.isNotEmpty) {
-            _currentPin =
-                _currentPin.substring(0, _currentPin.length - 1);
+            _currentPin = _currentPin.substring(0, _currentPin.length - 1);
           }
           break;
         case _ChangePinStep.newPin:
@@ -108,8 +106,7 @@ class _ChangePinPageState extends State<ChangePinPage> {
           break;
         case _ChangePinStep.confirm:
           if (_confirmPin.isNotEmpty) {
-            _confirmPin =
-                _confirmPin.substring(0, _confirmPin.length - 1);
+            _confirmPin = _confirmPin.substring(0, _confirmPin.length - 1);
           }
           break;
       }
@@ -169,11 +166,9 @@ class _ChangePinPageState extends State<ChangePinPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       appBar: AppBar(
-        backgroundColor:
-            isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+        backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         title: Text(
           'تغيير رمز الدخول',
@@ -236,7 +231,11 @@ class _ChangePinPageState extends State<ChangePinPage> {
   }
 
   Widget _buildStepIndicator(bool isDark) {
-    final steps = [_ChangePinStep.current, _ChangePinStep.newPin, _ChangePinStep.confirm];
+    final steps = [
+      _ChangePinStep.current,
+      _ChangePinStep.newPin,
+      _ChangePinStep.confirm,
+    ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -255,9 +254,7 @@ class _ChangePinPageState extends State<ChangePinPage> {
                 border: Border.all(
                   color: isActive
                       ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                      : (isDark
-                          ? NeuColors.textHintDark
-                          : NeuColors.textHint),
+                      : (isDark ? NeuColors.textHintDark : NeuColors.textHint),
                   width: 2,
                 ),
               ),
@@ -270,8 +267,8 @@ class _ChangePinPageState extends State<ChangePinPage> {
                     color: isActive
                         ? NeuColors.textOnDark
                         : (isDark
-                            ? NeuColors.textHintDark
-                            : NeuColors.textHint),
+                              ? NeuColors.textHintDark
+                              : NeuColors.textHint),
                   ),
                 ),
               ),
@@ -282,9 +279,7 @@ class _ChangePinPageState extends State<ChangePinPage> {
                 height: 2,
                 color: isActive
                     ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                    : (isDark
-                        ? NeuColors.dividerDark
-                        : NeuColors.divider),
+                    : (isDark ? NeuColors.dividerDark : NeuColors.divider),
               ),
           ],
         );
@@ -293,84 +288,83 @@ class _ChangePinPageState extends State<ChangePinPage> {
   }
 
   Widget _buildPinDots(bool isDark) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(AppConstants.pinLength, (i) {
-          final filled = i < _activePin.length;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            width: filled ? 18 : 14,
-            height: filled ? 18 : 14,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _hasError
-                  ? NeuColors.danger
-                  : (filled
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: List.generate(AppConstants.pinLength, (i) {
+      final filled = i < _activePin.length;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: filled ? 18 : 14,
+        height: filled ? 18 : 14,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _hasError
+              ? NeuColors.danger
+              : (filled
+                    ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                    : Colors.transparent),
+          border: Border.all(
+            color: _hasError
+                ? NeuColors.danger
+                : (filled
                       ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                      : Colors.transparent),
-              border: Border.all(
-                color: _hasError
-                    ? NeuColors.danger
-                    : (filled
-                        ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                        : (isDark
+                      : (isDark
                             ? NeuColors.shadowLightDark
                             : NeuColors.shadowDark)),
-                width: 2,
-              ),
-            ),
-          );
-        }),
-      );
-
-  Widget _buildNumPad(bool isDark) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 48),
-        child: Column(
-          children: [
-            _numRow([1, 2, 3], isDark),
-            AppSpacing.gapMd,
-            _numRow([4, 5, 6], isDark),
-            AppSpacing.gapMd,
-            _numRow([7, 8, 9], isDark),
-            AppSpacing.gapMd,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildPadBtn(
-                  isDark: isDark,
-                  onTap: _onDelete,
-                  child: Icon(
-                    Icons.backspace_outlined,
-                    color: isDark
-                        ? NeuColors.textSecondaryDark
-                        : NeuColors.textSecondary,
-                    size: 24,
-                  ),
-                ),
-                _numBtn(0, isDark),
-                const SizedBox(width: 72, height: 72),
-              ],
-            ),
-          ],
-        ),
-      );
-
-  Widget _numRow(List<int> d, bool isDark) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: d.map((n) => _numBtn(n, isDark)).toList(),
-      );
-
-  Widget _numBtn(int d, bool isDark) => _buildPadBtn(
-        isDark: isDark,
-        onTap: () => _onDigit(d),
-        child: Text(
-          d.toString(),
-          style:
-              (isDark ? AppTypography.h2Dark : AppTypography.h2).copyWith(
-            fontWeight: FontWeight.w500,
+            width: 2,
           ),
         ),
       );
+    }),
+  );
+
+  Widget _buildNumPad(bool isDark) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 48),
+    child: Column(
+      children: [
+        _numRow([3, 2, 1], isDark),
+        AppSpacing.gapMd,
+        _numRow([6, 5, 4], isDark),
+        AppSpacing.gapMd,
+        _numRow([9, 8, 7], isDark),
+        AppSpacing.gapMd,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const SizedBox(width: 72, height: 72),
+            _numBtn(0, isDark),
+            _buildPadBtn(
+              isDark: isDark,
+              onTap: _onDelete,
+              child: Icon(
+                Icons.backspace_outlined,
+                color: isDark
+                    ? NeuColors.textSecondaryDark
+                    : NeuColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _numRow(List<int> d, bool isDark) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    children: d.map((n) => _numBtn(n, isDark)).toList(),
+  );
+
+  Widget _numBtn(int d, bool isDark) => _buildPadBtn(
+    isDark: isDark,
+    onTap: () => _onDigit(d),
+    child: Text(
+      d.toString(),
+      style: (isDark ? AppTypography.h2Dark : AppTypography.h2).copyWith(
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
 
   Widget _buildPadBtn({
     required bool isDark,

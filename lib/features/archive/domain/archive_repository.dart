@@ -19,9 +19,16 @@ class ArchiveRepository {
   Stream<List<ArchiveData>> watchAll() => _db.archiveDao.watchAllActive();
 
   /// Search archive
-  Stream<List<ArchiveData>> search(String query) => _db.archiveDao.searchArchive(query);
+  Stream<List<ArchiveData>> search(String query) =>
+      _db.archiveDao.searchArchive(query);
 
-  /// Create a new archive record
+  /// Create a new archive record.
+  ///
+  /// The file (if any) is saved by the presentation layer via
+  /// [FileStorageService] before calling this method.  The
+  /// [localFilePath] passed here is the already-persisted path.
+  ///
+  /// Returns: Database record ID
   Future<int> createArchiveRecord({
     required String title,
     String? referenceNumber,
@@ -34,8 +41,11 @@ class ArchiveRepository {
     String? notes,
     bool isConfidential = false,
   }) async {
+    // localFilePath is already saved by the presentation layer via
+    // FileStorageService — no need to re-copy it here.
+
     final now = DateTime.now().millisecondsSinceEpoch;
-    
+
     final id = await _db.archiveDao.insertDocument(
       ArchiveCompanion.insert(
         syncId: _uuid.v4(),
@@ -54,19 +64,30 @@ class ArchiveRepository {
       ),
     );
 
-    // Always log archive additions
-    await _logger.log(SecurityAction.settingsChanged, details: 'أرشفة وثيقة جديدة: $title');
-    
+    // Log archive creation
+    await _logger.log(
+      SecurityAction.exportData,
+      details: 'أرشفة وثيقة جديدة: $title',
+    );
+
     return id;
   }
 
   /// Record access to confidential document
   Future<void> logConfidentialAccess(String title) async {
-    await _logger.log(SecurityAction.settingsChanged, details: 'محاولة وصول لوثيقة سرية: $title');
+    await _logger.log(
+      SecurityAction.exportData,
+      details: 'محاولة وصول لوثيقة سرية: $title',
+    );
   }
 
-  /// Delete (soft)
+  /// Delete (soft) an archive record.
+  ///
+  /// The physical file is intentionally NOT deleted to preserve
+  /// data recoverability — consistent with the project's
+  /// "Hard Delete forbidden" rule.
   Future<void> deleteRecord(int id) async {
+    // Perform soft delete in database
     await _db.archiveDao.softDelete(id);
     await _logger.logRecordDeleted('وثيقة مؤرشفة', id);
   }

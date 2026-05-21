@@ -116,18 +116,24 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: Theme.of(ctx).brightness == Brightness.dark ? NeuColors.bgColorDark : NeuColors.bgColor,
+          backgroundColor: Theme.of(ctx).brightness == Brightness.dark
+              ? NeuColors.bgColorDark
+              : NeuColors.bgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
           title: Text(
             'تفعيل البصمة',
-            style: Theme.of(ctx).brightness == Brightness.dark ? AppTypography.h3Dark : AppTypography.h3,
+            style: Theme.of(ctx).brightness == Brightness.dark
+                ? AppTypography.h3Dark
+                : AppTypography.h3,
             textAlign: TextAlign.center,
           ),
           content: Text(
             'هل تريد استخدام البصمة للدخول السريع؟',
-            style: Theme.of(ctx).brightness == Brightness.dark ? AppTypography.bodyDark : AppTypography.body,
+            style: Theme.of(ctx).brightness == Brightness.dark
+                ? AppTypography.bodyDark
+                : AppTypography.body,
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -136,9 +142,15 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               onPressed: () => Navigator.of(ctx).pop(false),
               child: Text(
                 'لاحقًا',
-                style: (Theme.of(ctx).brightness == Brightness.dark ? AppTypography.bodyDark : AppTypography.body).copyWith(
-                  color: Theme.of(ctx).brightness == Brightness.dark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
-                ),
+                style:
+                    (Theme.of(ctx).brightness == Brightness.dark
+                            ? AppTypography.bodyDark
+                            : AppTypography.body)
+                        .copyWith(
+                          color: Theme.of(ctx).brightness == Brightness.dark
+                              ? NeuColors.textSecondaryDark
+                              : NeuColors.textSecondary,
+                        ),
               ),
             ),
             const SizedBox(width: 8),
@@ -187,9 +199,12 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                 _isConfirming
                     ? 'أعد إدخال الرمز للتأكيد'
                     : 'أدخل رمزًا مكونًا من ٦ أرقام',
-                style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
-                  color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
-                ),
+                style: (isDark ? AppTypography.bodyDark : AppTypography.body)
+                    .copyWith(
+                      color: isDark
+                          ? NeuColors.textSecondaryDark
+                          : NeuColors.textSecondary,
+                    ),
               ),
 
               AppSpacing.gapXxxl,
@@ -235,11 +250,17 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             shape: BoxShape.circle,
             color: _hasError
                 ? NeuColors.danger
-                : (isFilled ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep) : Colors.transparent),
+                : (isFilled
+                      ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                      : Colors.transparent),
             border: Border.all(
               color: _hasError
                   ? NeuColors.danger
-                  : (isFilled ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep) : (isDark ? NeuColors.shadowLightDark : NeuColors.shadowDark)),
+                  : (isFilled
+                        ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                        : (isDark
+                              ? NeuColors.shadowLightDark
+                              : NeuColors.shadowDark)),
               width: 2,
             ),
           ),
@@ -253,11 +274,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 48),
       child: Column(
         children: [
-          _buildNumberRow([1, 2, 3], isDark),
+          _buildNumberRow([3, 2, 1], isDark),
           AppSpacing.gapMd,
-          _buildNumberRow([4, 5, 6], isDark),
+          _buildNumberRow([6, 5, 4], isDark),
           AppSpacing.gapMd,
-          _buildNumberRow([7, 8, 9], isDark),
+          _buildNumberRow([9, 8, 7], isDark),
           AppSpacing.gapMd,
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -310,7 +331,9 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+            color: isDark
+                ? NeuColors.textSecondaryDark
+                : NeuColors.textSecondary,
             size: 24,
           ),
         ),

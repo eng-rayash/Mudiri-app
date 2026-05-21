@@ -15,6 +15,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
 import '../domain/archive_repository.dart';
+import '../providers/archive_categories_provider.dart';
 import '../../../core/database/app_database.dart';
 
 /// Professional Executive screen for listing, searching, filtering, and managing Archived Memos.
@@ -31,16 +32,6 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'الكل';
   final Set<int> _selectedIds = {};
-
-  final List<String> _filters = [
-    'الكل',
-    'خطاب',
-    'تعميم',
-    'قرار',
-    'محضر اجتماع',
-    'مذكرة داخلية',
-    'سري للغاية 🔒',
-  ];
 
   @override
   void dispose() {
@@ -475,42 +466,62 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
               ),
             ),
 
-            // 2. Horizontal Filter Chips Scroll
-            SizedBox(
-              height: 52,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                itemCount: _filters.length,
-                itemBuilder: (context, index) {
-                  final filter = _filters[index];
-                  final isSelected = _selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = filter),
-                      child: AnimatedContainer(
-                        duration: NeuDecorations.pressDuration,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: isSelected
-                            ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
-                            : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
-                        child: Center(
-                          child: Text(
-                            filter,
-                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
-                              color: isSelected
-                                  ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                                  : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            // 2. Horizontal Filter Chips Scroll — dynamic from provider
+            Consumer(
+              builder: (context, ref, _) {
+                final categoriesAsync = ref.watch(archiveCategoriesProvider);
+                final dynamicCategories = categoriesAsync.value ?? [];
+                // Build filters: fixed "الكل" + dynamic categories + fixed "سري للغاية"
+                final filters = [
+                  'الكل',
+                  ...dynamicCategories,
+                  'سري للغاية 🔒',
+                ];
+
+                // Reset filter if the selected one was removed
+                if (!filters.contains(_selectedFilter)) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _selectedFilter = 'الكل');
+                  });
+                }
+
+                return SizedBox(
+                  height: 52,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    itemCount: filters.length,
+                    itemBuilder: (context, index) {
+                      final filter = filters[index];
+                      final isSelected = _selectedFilter == filter;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedFilter = filter),
+                          child: AnimatedContainer(
+                            duration: NeuDecorations.pressDuration,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: isSelected
+                                ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                                : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
+                            child: Center(
+                              child: Text(
+                                filter,
+                                style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                                  color: isSelected
+                                      ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                                      : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
 
             // 3. Memos List View

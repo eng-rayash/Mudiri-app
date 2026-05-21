@@ -26,6 +26,10 @@ class ArchiveDao extends DatabaseAccessor<AppDatabase> with _$ArchiveDaoMixin {
         ..orderBy([(a) => OrderingTerm.desc(a.createdAt)]))
       .watch();
 
+  /// Get a single archive record by ID
+  Future<ArchiveData?> getById(int id) =>
+      (select(archive)..where((a) => a.id.equals(id))).getSingleOrNull();
+
   /// Insert document
   Future<int> insertDocument(ArchiveCompanion document) => into(archive).insert(document);
 

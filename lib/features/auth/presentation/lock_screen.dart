@@ -123,8 +123,7 @@ class _LockScreenState extends State<LockScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       body: SafeArea(
         child: Directionality(
           textDirection: TextDirection.rtl,
@@ -164,10 +163,10 @@ class _LockScreenState extends State<LockScreen> {
                 'أدخل رمز الدخول',
                 style: (isDark ? AppTypography.bodyDark : AppTypography.body)
                     .copyWith(
-                  color: isDark
-                      ? NeuColors.textSecondaryDark
-                      : NeuColors.textSecondary,
-                ),
+                      color: isDark
+                          ? NeuColors.textSecondaryDark
+                          : NeuColors.textSecondary,
+                    ),
               ),
 
               AppSpacing.gapXxxl,
@@ -229,114 +228,106 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   Widget _buildPinDots(bool isDark) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(AppConstants.pinLength, (i) {
-          final filled = i < _pin.length;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            width: filled ? 18 : 14,
-            height: filled ? 18 : 14,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _hasError
-                  ? NeuColors.danger
-                  : (filled
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: List.generate(AppConstants.pinLength, (i) {
+      final filled = i < _pin.length;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: filled ? 18 : 14,
+        height: filled ? 18 : 14,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _hasError
+              ? NeuColors.danger
+              : (filled
+                    ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                    : Colors.transparent),
+          border: Border.all(
+            color: _hasError
+                ? NeuColors.danger
+                : (filled
                       ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                      : Colors.transparent),
-              border: Border.all(
-                color: _hasError
-                    ? NeuColors.danger
-                    : (filled
-                        ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                        : (isDark
+                      : (isDark
                             ? NeuColors.shadowLightDark
                             : NeuColors.shadowDark)),
-                width: 2,
-              ),
-            ),
-          );
-        }),
-      );
-
-  /// ATM-style layout:
-  /// [1][2][3]
-  /// [4][5][6]
-  /// [7][8][9]
-  /// [DEL][0][OK]
-  Widget _buildNumPad(bool isDark) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 48),
-        child: Column(
-          children: [
-            _numRow([1, 2, 3], isDark),
-            AppSpacing.gapMd,
-            _numRow([4, 5, 6], isDark),
-            AppSpacing.gapMd,
-            _numRow([7, 8, 9], isDark),
-            AppSpacing.gapMd,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // DELETE button
-                _PadButton(
-                  isDark: isDark,
-                  onTap: _onDelete,
-                  child: Icon(
-                    Icons.backspace_outlined,
-                    color: isDark
-                        ? NeuColors.textSecondaryDark
-                        : NeuColors.textSecondary,
-                    size: 24,
-                  ),
-                ),
-                // ZERO button
-                _numBtn(0, isDark),
-                // CONFIRM button
-                _PadButton(
-                  isDark: isDark,
-                  onTap: _pin.length == AppConstants.pinLength
-                      ? _onConfirm
-                      : null,
-                  child: Icon(
-                    Icons.check_rounded,
-                    color: _pin.length == AppConstants.pinLength
-                        ? NeuColors.success
-                        : (isDark
-                            ? NeuColors.textHintDark
-                            : NeuColors.textHint),
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-
-  Widget _numRow(List<int> d, bool isDark) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: d.map((n) => _numBtn(n, isDark)).toList(),
-      );
-
-  Widget _numBtn(int d, bool isDark) => _PadButton(
-        isDark: isDark,
-        onTap: () => _onDigit(d),
-        child: Text(
-          d.toString(),
-          style: (isDark ? AppTypography.h2Dark : AppTypography.h2).copyWith(
-            fontWeight: FontWeight.w500,
+            width: 2,
           ),
         ),
       );
+    }),
+  );
+
+  /// ATM-style layout (RTL - عكسي):
+  /// [3][2][1]
+  /// [6][5][4]
+  /// [9][8][7]
+  /// [OK][0][DEL]
+  Widget _buildNumPad(bool isDark) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 48),
+    child: Column(
+      children: [
+        _numRow([3, 2, 1], isDark),
+        AppSpacing.gapMd,
+        _numRow([6, 5, 4], isDark),
+        AppSpacing.gapMd,
+        _numRow([9, 8, 7], isDark),
+        AppSpacing.gapMd,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // CONFIRM button
+            _PadButton(
+              isDark: isDark,
+              onTap: _pin.length == AppConstants.pinLength ? _onConfirm : null,
+              child: Icon(
+                Icons.check_rounded,
+                color: _pin.length == AppConstants.pinLength
+                    ? NeuColors.success
+                    : (isDark ? NeuColors.textHintDark : NeuColors.textHint),
+                size: 28,
+              ),
+            ),
+            // ZERO button
+            _numBtn(0, isDark),
+            // DELETE button
+            _PadButton(
+              isDark: isDark,
+              onTap: _onDelete,
+              child: Icon(
+                Icons.backspace_outlined,
+                color: isDark
+                    ? NeuColors.textSecondaryDark
+                    : NeuColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _numRow(List<int> d, bool isDark) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    children: d.map((n) => _numBtn(n, isDark)).toList(),
+  );
+
+  Widget _numBtn(int d, bool isDark) => _PadButton(
+    isDark: isDark,
+    onTap: () => _onDigit(d),
+    child: Text(
+      d.toString(),
+      style: (isDark ? AppTypography.h2Dark : AppTypography.h2).copyWith(
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
 }
 
 /// Animated PIN Pad Button with Neumorphic press effect.
 class _PadButton extends StatefulWidget {
-  const _PadButton({
-    required this.isDark,
-    required this.child,
-    this.onTap,
-  });
+  const _PadButton({required this.isDark, required this.child, this.onTap});
 
   final bool isDark;
   final Widget child;
