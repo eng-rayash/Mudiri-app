@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:fl_chart/fl_chart.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 import '../../../core/router/route_names.dart';
 import '../../meetings/providers/meetings_provider.dart';
@@ -72,20 +74,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
+    
+    // Format Gregorian Date
     final dateStr = DateFormat('EEEE، d MMMM yyyy', 'ar').format(now);
+    
+    // Format Hijri Date
+    HijriCalendar.setLocal('ar');
+    final hijri = HijriCalendar.fromDate(now);
+    final hijriStr = '${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} هـ';
+
+    final analytics = ref.watch(reportsAnalyticsProvider);
+    final events = ref.watch(timelineProvider);
+    final displayedEvents = events.take(5).toList();
 
     return Scaffold(
-      backgroundColor:
-          isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
       floatingActionButton: const DashboardFab(),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SafeArea(
         child: Directionality(
           textDirection: TextDirection.rtl,
           child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
-              // Top Bar
+              // Top Executive Bar
               SliverToBoxAdapter(
                 child: Padding(
                   padding: AppSpacing.screen,
@@ -96,17 +108,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'مرحبًا، المدير',
-                              style: isDark
-                                  ? AppTypography.h3Dark
-                                  : AppTypography.h3,
+                              'مرحبًا، سعادة المدير',
+                              style: isDark ? AppTypography.h3Dark : AppTypography.h3,
                             ),
                             AppSpacing.gapXs,
                             Text(
-                              dateStr,
+                              '$dateStr | $hijriStr',
                               style: isDark
-                                  ? AppTypography.captionDark
-                                  : AppTypography.caption,
+                                  ? AppTypography.captionDark.copyWith(
+                                      color: NeuColors.goldAccent,
+                                      fontWeight: FontWeight.w600,
+                                    )
+                                  : AppTypography.caption.copyWith(
+                                      color: NeuColors.navyMid,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                             ),
                           ],
                         ),
@@ -114,18 +130,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       GestureDetector(
                         onTap: () => context.push(RouteNames.settings),
                         child: Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? NeuColors.bgColorDark
-                                : NeuColors.bgColor,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isDark ? NeuColors.surfaceDark : NeuColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark ? NeuColors.shadowDarkDark : NeuColors.shadowDark,
+                                offset: const Offset(3, 3),
+                                blurRadius: 6,
+                              ),
+                              BoxShadow(
+                                color: isDark ? NeuColors.shadowLightDark : NeuColors.shadowLight,
+                                offset: const Offset(-3, -3),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
                           child: Icon(
                             Icons.settings_rounded,
-                            color: isDark
-                                ? NeuColors.goldAccent
-                                : NeuColors.navyDeep,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
                             size: 24,
                           ),
                         ),
@@ -147,79 +171,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded,
-                                color: NeuColors.goldAccent, size: 20),
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                              size: 20,
+                            ),
                             AppSpacing.gapHSm,
                             Text(
-                              'ملخص اليوم',
-                              style: isDark
-                                  ? AppTypography.h4Dark
-                                  : AppTypography.h4,
+                              'ملخص اليوم التنفيذي',
+                              style: isDark ? AppTypography.h4Dark : AppTypography.h4,
                             ),
                           ],
                         ),
                         AppSpacing.gapLg,
-                        Consumer(builder: (context, ref, child) {
-                          final analytics =
-                              ref.watch(reportsAnalyticsProvider);
-                          return Row(
-                            children: [
-                              _buildSummaryItem(
-                                Icons.groups_rounded,
-                                '${ref.watch(todayMeetingsProvider).valueOrNull?.length ?? 0}',
-                                'اجتماعات',
-                                isDark,
-                              ),
-                              _buildSummaryItem(
-                                Icons.task_alt_rounded,
-                                '${analytics.totalTasks}',
-                                'مهام',
-                                isDark,
-                              ),
-                              _buildSummaryItem(
-                                Icons.replay_rounded,
-                                '${analytics.criticalDirectives}',
-                                'توجيهات عاجلة',
-                                isDark,
-                              ),
-                              _buildSummaryItem(
-                                Icons.event_rounded,
-                                '${analytics.upcomingAppointments}',
-                                'مواعيد',
-                                isDark,
-                              ),
-                            ],
-                          );
-                        }),
+                        Row(
+                          children: [
+                            _buildSummaryItem(
+                              Icons.groups_rounded,
+                              '${ref.watch(todayMeetingsProvider).valueOrNull?.length ?? 0}',
+                              'اجتماعات',
+                              isDark,
+                              NeuColors.info,
+                            ),
+                            _buildSummaryItem(
+                              Icons.task_alt_rounded,
+                              '${analytics.totalTasks}',
+                              'مهام عمل',
+                              isDark,
+                              NeuColors.success,
+                            ),
+                            _buildSummaryItem(
+                              Icons.campaign_rounded,
+                              '${analytics.criticalDirectives}',
+                              'توجيهات عاجلة',
+                              isDark,
+                              NeuColors.danger,
+                            ),
+                            _buildSummaryItem(
+                              Icons.event_rounded,
+                              '${analytics.upcomingAppointments}',
+                              'مواعيد هامة',
+                              isDark,
+                              NeuColors.warning,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
 
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+              // Task Distribution Donut Chart
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: AppSpacing.screenH,
+                  child: TaskDistributionChart(
+                    completed: analytics.completedTasks,
+                    inProgress: analytics.inProgressTasks,
+                    overdue: analytics.overdueTasks,
+                    stalled: analytics.stalledTasks,
+                    isDark: isDark,
+                  ),
+                ),
+              ),
 
               // Section: Daily Timeline (السجل الزمني اليومي)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   child: Row(
                     children: [
                       Text(
                         'السجل الزمني اليومي',
-                        style: isDark
-                            ? AppTypography.h4Dark
-                            : AppTypography.h4,
+                        style: isDark ? AppTypography.h4Dark : AppTypography.h4,
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () =>
-                            context.push(RouteNames.timeline),
-                        child: Text(
-                          'عرض المخطط',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: isDark
-                                ? NeuColors.goldAccent
-                                : NeuColors.navyMid,
+                        onTap: () => context.push(RouteNames.timeline),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? NeuColors.surfaceDark : NeuColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'عرض المخطط',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -228,259 +271,243 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
 
-              // Daily Timeline List
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: AppSpacing.screenH,
-                  child: ref.watch(timelineProvider).isEmpty
-                      ? NeuCard(
+              // Daily Timeline List using SliverList.builder
+              displayedEvents.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Padding(
+                        padding: AppSpacing.screenH,
+                        child: NeuCard(
                           child: EmptyState(
                             icon: Icons.timeline_rounded,
                             title: 'لا توجد أحداث مجدولة لليوم',
                             actionLabel: 'عرض المخطط الكامل',
-                            onAction: () =>
-                                context.push(RouteNames.timeline),
+                            onAction: () => context.push(RouteNames.timeline),
                           ),
-                        )
-                      : Consumer(
-                          builder: (context, ref, child) {
-                            final events = ref.watch(timelineProvider);
-                            final displayedEvents = events.take(5).toList();
-
-                            IconData getEventIcon(String type) {
-                              switch (type) {
-                                case 'meeting': return Icons.groups_rounded;
-                                case 'visitor': return Icons.badge_rounded;
-                                case 'movement': return Icons.directions_car_rounded;
-                                case 'appointment': return Icons.calendar_month_rounded;
-                                case 'task': return Icons.task_alt_rounded;
-                                case 'call': return Icons.phone_in_talk_rounded;
-                                case 'directive': return Icons.campaign_rounded;
-                                default: return Icons.event_note_rounded;
-                              }
+                        ),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: AppSpacing.screenH,
+                      sliver: SliverList.builder(
+                        itemCount: displayedEvents.length,
+                        itemBuilder: (context, idx) {
+                          final event = displayedEvents[idx];
+                          
+                          IconData getEventIcon(String type) {
+                            switch (type) {
+                              case 'meeting': return Icons.groups_rounded;
+                              case 'visitor': return Icons.badge_rounded;
+                              case 'movement': return Icons.directions_car_rounded;
+                              case 'appointment': return Icons.calendar_month_rounded;
+                              case 'task': return Icons.task_alt_rounded;
+                              case 'call': return Icons.phone_in_talk_rounded;
+                              case 'directive': return Icons.campaign_rounded;
+                              default: return Icons.event_note_rounded;
                             }
+                          }
 
-                            Color getEventColor(String type) {
-                              switch (type) {
-                                case 'meeting': return NeuColors.info;
-                                case 'visitor': return NeuColors.warning;
-                                case 'movement': return NeuColors.goldAccent;
-                                case 'appointment': return NeuColors.success;
-                                case 'task': return NeuColors.navyLight;
-                                case 'call': return NeuColors.info;
-                                case 'directive': return NeuColors.danger;
-                                default: return NeuColors.goldAccent;
-                              }
+                          Color getEventColor(String type) {
+                            switch (type) {
+                              case 'meeting': return NeuColors.info;
+                              case 'visitor': return NeuColors.warning;
+                              case 'movement': return isDark ? NeuColors.goldAccent : NeuColors.navyMid;
+                              case 'appointment': return NeuColors.success;
+                              case 'task': return NeuColors.navyLight;
+                              case 'call': return NeuColors.info;
+                              case 'directive': return NeuColors.danger;
+                              default: return NeuColors.goldAccent;
                             }
+                          }
 
-                            String getEventTypeName(String type) {
-                              switch (type) {
-                                case 'meeting': return 'اجتماع';
-                                case 'visitor': return 'لقاء / زيارة';
-                                case 'movement': return 'تحرك خارجي';
-                                case 'appointment': return 'موعد';
-                                case 'task': return 'مهمة عمل';
-                                case 'call': return 'مكالمة هاتفية';
-                                case 'directive': return 'توجيه تنفيذي';
-                                default: return 'حدث';
-                              }
+                          String getEventTypeName(String type) {
+                            switch (type) {
+                              case 'meeting': return 'اجتماع';
+                              case 'visitor': return 'لقاء / زيارة';
+                              case 'movement': return 'تحرك خارجي';
+                              case 'appointment': return 'موعد';
+                              case 'task': return 'مهمة عمل';
+                              case 'call': return 'مكالمة هاتفية';
+                              case 'directive': return 'توجيه تنفيذي';
+                              default: return 'حدث';
                             }
+                          }
 
-                            void handleEventTap(BuildContext context, TimelineEvent event) {
-                              if (event.id == null) return;
-                              switch (event.type) {
-                                case 'meeting':
-                                  context.push(RouteNames.meetingDetailPath(event.id!));
-                                  break;
-                                case 'task':
-                                  context.push(RouteNames.taskDetailPath(event.id!));
-                                  break;
-                                case 'directive':
-                                  context.push(RouteNames.directiveDetailPath(event.id!));
-                                  break;
-                                case 'appointment':
-                                  context.push(RouteNames.appointmentsList);
-                                  break;
-                                case 'call':
-                                  context.push(RouteNames.callsList);
-                                  break;
-                                case 'visitor':
-                                  context.push(RouteNames.visitorsList);
-                                  break;
-                                case 'movement':
-                                  context.push(RouteNames.movementsList);
-                                  break;
-                              }
+                          void handleEventTap(BuildContext context, TimelineEvent event) {
+                            if (event.id == null) return;
+                            switch (event.type) {
+                              case 'meeting':
+                                context.push(RouteNames.meetingDetailPath(event.id!));
+                                break;
+                              case 'task':
+                                context.push(RouteNames.taskDetailPath(event.id!));
+                                break;
+                              case 'directive':
+                                context.push(RouteNames.directiveDetailPath(event.id!));
+                                break;
+                              case 'appointment':
+                                context.push(RouteNames.appointmentsList);
+                                break;
+                              case 'call':
+                                context.push(RouteNames.callsList);
+                                break;
+                              case 'visitor':
+                                context.push(RouteNames.visitorsList);
+                                break;
+                              case 'movement':
+                                context.push(RouteNames.movementsList);
+                                break;
                             }
+                          }
 
-                            return Column(
-                              children: displayedEvents.asMap().entries.map((entry) {
-                                final idx = entry.key;
-                                final event = entry.value;
-                                final color = getEventColor(event.type);
-                                final icon = getEventIcon(event.type);
-                                final typeLabel = getEventTypeName(event.type);
-                                
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Time Column
-                                    SizedBox(
-                                      width: 50,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 16),
-                                        child: Text(
-                                          event.time,
-                                          style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
+                          final color = getEventColor(event.type);
+                          final icon = getEventIcon(event.type);
+                          final typeLabel = getEventTypeName(event.type);
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Time Column
+                              SizedBox(
+                                width: 50,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: Text(
+                                    event.time,
+                                    style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              
+                              // Line & Dot
+                              Column(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 18),
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: event.isCompleted ? NeuColors.success : color,
+                                      border: Border.all(
+                                        color: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+                                        width: 2,
                                       ),
                                     ),
-                                    
-                                    // Line & Dot
-                                    Column(
-                                      children: [
-                                        Container(
-                                          margin: const EdgeInsets.only(top: 18),
-                                          width: 12,
-                                          height: 12,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: event.isCompleted ? NeuColors.success : color,
-                                            border: Border.all(
-                                              color: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
-                                              width: 2,
+                                  ),
+                                  if (idx != displayedEvents.length - 1)
+                                    Container(
+                                      width: 2,
+                                      height: 62,
+                                      color: isDark ? NeuColors.dividerDark : NeuColors.divider,
+                                    ),
+                                ],
+                              ),
+                              
+                              AppSpacing.gapHSm,
+                              
+                              // Card
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: GestureDetector(
+                                    onTap: () => handleEventTap(context, event),
+                                    child: NeuCard(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: (isDark ? NeuColors.surfaceDark : NeuColors.surface),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              icon,
+                                              color: event.isCompleted ? NeuColors.success : color,
+                                              size: 18,
                                             ),
                                           ),
-                                        ),
-                                        if (idx != displayedEvents.length - 1)
-                                          Container(
-                                            width: 2,
-                                            height: 62,
-                                            color: isDark ? NeuColors.dividerDark : NeuColors.divider,
-                                          ),
-                                      ],
-                                    ),
-                                    
-                                    AppSpacing.gapHSm,
-                                    
-                                    // Card
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
-                                        child: GestureDetector(
-                                          onTap: () => handleEventTap(context, event),
-                                          child: NeuCard(
-                                            padding: const EdgeInsets.all(12),
-                                            child: Row(
+                                          AppSpacing.gapHSm,
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Container(
-                                                  padding: const EdgeInsets.all(8),
-                                                  decoration: BoxDecoration(
-                                                    color: (isDark ? NeuColors.surfaceDark : NeuColors.surface),
-                                                    shape: BoxShape.circle,
+                                                Text(
+                                                  event.title,
+                                                  style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
                                                   ),
-                                                  child: Icon(
-                                                    icon,
-                                                    color: event.isCompleted ? NeuColors.success : color,
-                                                    size: 18,
-                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
-                                                AppSpacing.gapHSm,
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        event.title,
-                                                        style: (isDark
-                                                            ? AppTypography.bodyDark
-                                                            : AppTypography.body).copyWith(
-                                                          fontWeight: FontWeight.bold,
-                                                          fontSize: 14,
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                      Text(
-                                                        typeLabel,
-                                                        style: (isDark
-                                                            ? AppTypography.captionDark
-                                                            : AppTypography.caption).copyWith(fontSize: 11),
-                                                      ),
-                                                    ],
-                                                  ),
+                                                Text(
+                                                  typeLabel,
+                                                  style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(fontSize: 11),
                                                 ),
-                                                if (event.isCompleted)
-                                                  const Icon(
-                                                    Icons.check_circle_rounded,
-                                                    color: NeuColors.success,
-                                                    size: 16,
-                                                  ),
                                               ],
                                             ),
                                           ),
-                                        ),
+                                          if (event.isCompleted)
+                                            const Icon(
+                                              Icons.check_circle_rounded,
+                                              color: NeuColors.success,
+                                              size: 16,
+                                            ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
-                ),
-              ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
 
-              // Stats Overview
+              // Stats Row (Meetings, Completion rate, critical directives)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  child: Consumer(builder: (context, ref, child) {
-                    final analytics =
-                        ref.watch(reportsAnalyticsProvider);
-                    final completionRate =
-                        (analytics.taskCompletionRate * 100).toInt();
-
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            '${ref.watch(meetingsListProvider).valueOrNull?.length ?? 0}',
-                            'اجتماعات',
-                            NeuColors.info,
-                            isDark,
-                          ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          '${ref.watch(meetingsListProvider).valueOrNull?.length ?? 0}',
+                          'إجمالي الاجتماعات',
+                          NeuColors.info,
+                          isDark,
                         ),
-                        AppSpacing.gapHMd,
-                        Expanded(
-                          child: _buildStatCard(
-                            '$completionRate%',
-                            'إنجاز',
-                            NeuColors.success,
-                            isDark,
-                          ),
+                      ),
+                      AppSpacing.gapHMd,
+                      Expanded(
+                        child: _buildStatCard(
+                          '${(analytics.taskCompletionRate * 100).toInt()}%',
+                          'نسبة إنجاز المهام',
+                          NeuColors.success,
+                          isDark,
                         ),
-                        AppSpacing.gapHMd,
-                        Expanded(
-                          child: _buildStatCard(
-                            '${analytics.criticalDirectives}',
-                            'توجيهات',
-                            NeuColors.warning,
-                            isDark,
-                          ),
+                      ),
+                      AppSpacing.gapHMd,
+                      Expanded(
+                        child: _buildStatCard(
+                          '${analytics.criticalDirectives}',
+                          'التوجيهات الهامة',
+                          NeuColors.danger,
+                          isDark,
                         ),
-                      ],
-                    );
-                  }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              // Bottom spacing (extra for FAB clearance)
+              // Extra padding at bottom for FAB clearance
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           ),
@@ -490,20 +517,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   static Widget _buildSummaryItem(
-      IconData icon, String count, String label, bool isDark) {
+      IconData icon, String count, String label, bool isDark, Color highlightColor) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon,
-              color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
-              size: 22),
+          Icon(icon, color: highlightColor, size: 24),
           AppSpacing.gapXs,
-          Text(count,
-              style: isDark ? AppTypography.h4Dark : AppTypography.h4),
-          Text(label,
-              style: isDark
-                  ? AppTypography.captionDark
-                  : AppTypography.caption),
+          Text(
+            count,
+            style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: isDark
+                ? AppTypography.captionDark.copyWith(fontSize: 11)
+                : AppTypography.caption.copyWith(fontSize: 11),
+          ),
         ],
       ),
     );
@@ -513,28 +544,207 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       String value, String label, Color color, bool isDark) {
     return NeuCard(
       margin: EdgeInsets.zero,
-      padding:
-          const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       radius: 20,
       child: Column(
         children: [
           Text(
             value,
-            style: (isDark
-                    ? AppTypography.statNumberDark
-                    : AppTypography.statNumber)
-                .copyWith(color: color, fontSize: 24),
+            style: (isDark ? AppTypography.statNumberDark : AppTypography.statNumber).copyWith(
+              color: color,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           AppSpacing.gapXs,
           Text(
             label,
-            style: isDark
-                ? AppTypography.statLabel
-                    .copyWith(color: NeuColors.textSecondaryDark)
-                : AppTypography.statLabel,
+            style: (isDark
+                    ? AppTypography.statLabel.copyWith(color: NeuColors.textSecondaryDark)
+                    : AppTypography.statLabel)
+                .copyWith(fontSize: 10),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Task distribution fl_chart section
+class TaskDistributionChart extends StatelessWidget {
+  final int completed;
+  final int inProgress;
+  final int overdue;
+  final int stalled;
+  final bool isDark;
+
+  const TaskDistributionChart({
+    super.key,
+    required this.completed,
+    required this.inProgress,
+    required this.overdue,
+    required this.stalled,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = completed + inProgress + overdue + stalled;
+
+    return NeuCard(
+      radius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.donut_large_rounded,
+                color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                size: 20,
+              ),
+              AppSpacing.gapHSm,
+              Text(
+                'توزيع حالات مهام العمل',
+                style: isDark ? AppTypography.h4Dark : AppTypography.h4,
+              ),
+            ],
+          ),
+          AppSpacing.gapLg,
+          if (total == 0)
+            SizedBox(
+              height: 120,
+              child: Center(
+                child: Text(
+                  'لا توجد مهام عمل مسجلة حتى الآن.',
+                  style: isDark ? AppTypography.bodySmallDark : AppTypography.bodySmall,
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: SizedBox(
+                    height: 130,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 3,
+                        centerSpaceRadius: 36,
+                        startDegreeOffset: -90,
+                        sections: [
+                          PieChartSectionData(
+                            color: NeuColors.success,
+                            value: completed.toDouble(),
+                            title: completed > 0 ? '$completed' : '',
+                            radius: 16,
+                            titleStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                          PieChartSectionData(
+                            color: NeuColors.warning,
+                            value: inProgress.toDouble(),
+                            title: inProgress > 0 ? '$inProgress' : '',
+                            radius: 16,
+                            titleStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                          PieChartSectionData(
+                            color: NeuColors.danger,
+                            value: overdue.toDouble(),
+                            title: overdue > 0 ? '$overdue' : '',
+                            radius: 16,
+                            titleStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                          PieChartSectionData(
+                            color: isDark ? NeuColors.navyLight : NeuColors.navyMid,
+                            value: stalled.toDouble(),
+                            title: stalled > 0 ? '$stalled' : '',
+                            radius: 16,
+                            titleStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                AppSpacing.gapHMd,
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildLegendItem('مكتملة', completed, NeuColors.success, isDark),
+                      AppSpacing.gapSm,
+                      _buildLegendItem('قيد التنفيذ', inProgress, NeuColors.warning, isDark),
+                      AppSpacing.gapSm,
+                      _buildLegendItem('متأخرة', overdue, NeuColors.danger, isDark),
+                      AppSpacing.gapSm,
+                      _buildLegendItem('متعثرة', stalled, isDark ? NeuColors.navyLight : NeuColors.navyMid, isDark),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, int count, Color color, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        AppSpacing.gapHSm,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontFamily: 'Tajawal',
+              color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'IBMPlexSansArabic',
+            color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }

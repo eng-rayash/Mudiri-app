@@ -35,14 +35,14 @@ class NeuDecorations {
         boxShadow: [
           BoxShadow(
             color: isDark ? NeuColors.shadowDarkDark : NeuColors.shadowDark,
-            offset: const Offset(6, 6),
-            blurRadius: 14,
+            offset: const Offset(5, 5),
+            blurRadius: 12,
             spreadRadius: 1,
           ),
           BoxShadow(
             color: isDark ? NeuColors.shadowLightDark : NeuColors.shadowLight,
-            offset: const Offset(-6, -6),
-            blurRadius: 14,
+            offset: const Offset(-5, -5),
+            blurRadius: 12,
             spreadRadius: 1,
           ),
         ],
@@ -121,7 +121,7 @@ class NeuDecorations {
                   NeuColors.bgColorDark,
                 ]
               : [
-                  NeuColors.shadowDark.withValues(alpha: 0.4),
+                  NeuColors.shadowDark.withValues(alpha: 0.35),
                   NeuColors.bgColor,
                 ],
         ),
@@ -143,15 +143,15 @@ class NeuDecorations {
   // Special — With accent border
   // ─────────────────────────────────────────────
 
-  /// Flat decoration with gold accent top border (for dashboard cards)
+  /// Flat decoration with accent top border (for dashboard cards)
   static BoxDecoration neuFlatWithGoldTop({
     double radius = 24,
     bool isDark = false,
   }) =>
       neuFlat(radius: radius, isDark: isDark).copyWith(
-        border: const Border(
+        border: Border(
           top: BorderSide(
-            color: NeuColors.goldAccent,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
             width: 3,
           ),
         ),

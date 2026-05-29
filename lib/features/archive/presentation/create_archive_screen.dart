@@ -304,11 +304,11 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
         maxWidth: 2400,
         maxHeight: 2400,
       );
-      if (image != null) {
-        final cropped = await DocumentScannerService().cropImage(File(image.path));
+      if (image != null && mounted) {
+        final cropped = await DocumentScannerService().cropImage(context, File(image.path));
         if (cropped != null) {
           final filtered = await _showFilterDialog(cropped);
-          if (filtered != null) {
+          if (filtered != null && mounted) {
             setState(() {
               _capturedImages.add(filtered);
               _pickedDocument = null; // Clear picked document if images are used
@@ -330,10 +330,11 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
       );
       if (images.isNotEmpty) {
         for (final xfile in images) {
-          final cropped = await DocumentScannerService().cropImage(File(xfile.path));
+          if (!mounted) break;
+          final cropped = await DocumentScannerService().cropImage(context, File(xfile.path));
           if (cropped != null) {
             final filtered = await _showFilterDialog(cropped);
-            if (filtered != null) {
+            if (filtered != null && mounted) {
               setState(() {
                 _capturedImages.add(filtered);
                 _pickedDocument = null; // Clear picked document if images are used

@@ -27,7 +27,7 @@ class AppTheme {
           onPrimary: NeuColors.textOnDark,
           primaryContainer: NeuColors.navyMid,
           onPrimaryContainer: NeuColors.textOnDark,
-          secondary: NeuColors.goldAccent,
+          secondary: NeuColors.goldDark,
           onSecondary: NeuColors.textOnDark,
           secondaryContainer: NeuColors.goldLight,
           onSecondaryContainer: NeuColors.textPrimary,
@@ -167,7 +167,7 @@ class AppTheme {
         // Floating Action Button
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: NeuColors.bgColor,
-          foregroundColor: NeuColors.goldAccent,
+          foregroundColor: NeuColors.navyDeep,
           elevation: 0,
           shape: CircleBorder(),
         ),
