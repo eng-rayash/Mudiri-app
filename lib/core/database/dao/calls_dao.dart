@@ -26,4 +26,9 @@ class CallsDao extends DatabaseAccessor<AppDatabase> with _$CallsDaoMixin {
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  Future<bool> updateCall(CallsCompanion call, int id) =>
+      (update(calls)..where((c) => c.id.equals(id)))
+          .write(call)
+          .then((rows) => rows > 0);
 }

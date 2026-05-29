@@ -39,4 +39,14 @@ class DirectivesDao extends DatabaseAccessor<AppDatabase> with _$DirectivesDaoMi
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  /// Get a single directive by ID
+  Future<Directive?> getById(int id) =>
+      (select(directives)..where((d) => d.id.equals(id))).getSingleOrNull();
+
+  /// Update directive
+  Future<bool> updateDirective(DirectivesCompanion directive, int id) =>
+      (update(directives)..where((d) => d.id.equals(id)))
+          .write(directive)
+          .then((rows) => rows > 0);
 }

@@ -32,4 +32,9 @@ class VisitorsDao extends DatabaseAccessor<AppDatabase> with _$VisitorsDaoMixin 
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  Future<bool> updateVisitor(VisitorsCompanion visitor, int id) =>
+      (update(visitors)..where((v) => v.id.equals(id)))
+          .write(visitor)
+          .then((rows) => rows > 0);
 }

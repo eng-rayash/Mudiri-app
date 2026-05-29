@@ -63,10 +63,6 @@ class FileStorageService {
       baseName = sanitizedTitle;
     }
 
-    // Add timestamp to ensure uniqueness (milliseconds since epoch)
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    baseName = '$baseName-$timestamp';
-
     // Add extension
     return '$baseName.$extension';
   }

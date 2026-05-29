@@ -45,4 +45,14 @@ class AppointmentsDao extends DatabaseAccessor<AppDatabase> with _$AppointmentsD
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  /// Get single appointment by ID
+  Future<Appointment?> getById(int id) =>
+      (select(appointments)..where((a) => a.id.equals(id))).getSingleOrNull();
+
+  /// Update appointment
+  Future<bool> updateAppointment(AppointmentsCompanion appointment, int id) =>
+      (update(appointments)..where((a) => a.id.equals(id)))
+          .write(appointment)
+          .then((rows) => rows > 0);
 }

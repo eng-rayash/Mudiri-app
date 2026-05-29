@@ -23,4 +23,9 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
       (select(notes)..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
           .watch();
+
+  Future<bool> updateNote(NotesCompanion note, int id) =>
+      (update(notes)..where((t) => t.id.equals(id)))
+          .write(note)
+          .then((rows) => rows > 0);
 }

@@ -41,4 +41,10 @@ class ArchiveDao extends DatabaseAccessor<AppDatabase> with _$ArchiveDaoMixin {
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  /// Update document
+  Future<bool> updateDocument(ArchiveCompanion document, int id) =>
+      (update(archive)..where((a) => a.id.equals(id)))
+          .write(document)
+          .then((rows) => rows > 0);
 }

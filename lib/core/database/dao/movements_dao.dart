@@ -33,4 +33,14 @@ class MovementsDao extends DatabaseAccessor<AppDatabase>
         ) >
         0;
   }
+
+  /// Get movement by ID
+  Future<Movement?> getById(int id) =>
+      (select(movements)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// Update movement
+  Future<bool> updateMovement(MovementsCompanion movement, int id) =>
+      (update(movements)..where((t) => t.id.equals(id)))
+          .write(movement)
+          .then((rows) => rows > 0);
 }
