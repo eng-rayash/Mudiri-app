@@ -10,10 +10,13 @@ import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_input.dart';
 import '../domain/appointments_repository.dart';
+import '../../../core/database/providers/database_providers.dart';
 
-/// Screen for creating a new appointment
+/// Screen for creating or editing an appointment
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
-  const CreateAppointmentScreen({super.key});
+  const CreateAppointmentScreen({super.key, this.appointmentId});
+
+  final int? appointmentId;
 
   @override
   ConsumerState<CreateAppointmentScreen> createState() => _CreateAppointmentScreenState();
@@ -30,6 +33,34 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.appointmentId != null) {
+      _loadAppointmentData();
+    }
+  }
+
+  Future<void> _loadAppointmentData() async {
+    final db = ref.read(databaseProvider);
+    final appt = await db.appointmentsDao.getById(widget.appointmentId!);
+    if (appt != null) {
+      setState(() {
+        _titleController.text = appt.title;
+        _locationController.text = appt.location ?? '';
+        _durationController.text = appt.durationMinutes.toString();
+        _selectedDate = DateTime.tryParse(appt.date) ?? DateTime.now();
+        final timeParts = appt.time.split(':');
+        if (timeParts.length >= 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.tryParse(timeParts[0]) ?? 12,
+            minute: int.tryParse(timeParts[1]) ?? 0,
+          );
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
@@ -41,7 +72,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('ar'),
     );
@@ -66,18 +97,29 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       final formattedTime = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
       final duration = int.tryParse(_durationController.text) ?? 30;
 
-      await repository.createAppointment(
-        title: _titleController.text.trim(),
-        date: _selectedDate,
-        time: formattedTime,
-        durationMinutes: duration,
-        location: _locationController.text.trim(),
-      );
+      if (widget.appointmentId != null) {
+        await repository.updateAppointment(
+          id: widget.appointmentId!,
+          title: _titleController.text.trim(),
+          date: _selectedDate,
+          time: formattedTime,
+          durationMinutes: duration,
+          location: _locationController.text.trim(),
+        );
+      } else {
+        await repository.createAppointment(
+          title: _titleController.text.trim(),
+          date: _selectedDate,
+          time: formattedTime,
+          durationMinutes: duration,
+          location: _locationController.text.trim(),
+        );
+      }
 
       if (mounted) {
-        context.pop();
+        context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم جدولة الموعد بنجاح')),
+          SnackBar(content: Text(widget.appointmentId != null ? 'تم تعديل الموعد بنجاح' : 'تم جدولة الموعد بنجاح')),
         );
       }
     } catch (e) {
@@ -105,7 +147,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
           icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('موعد جديد', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        title: Text(widget.appointmentId != null ? 'تعديل الموعد' : 'موعد جديد', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -193,7 +235,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
               NeuButton(
                 onPressed: _isLoading ? null : _submit,
                 isLoading: _isLoading,
-                label: 'جدولة الموعد',
+                label: widget.appointmentId != null ? 'حفظ التعديلات' : 'جدولة الموعد',
                 icon: Icons.check_rounded,
               ),
               AppSpacing.gapXxl,

@@ -12,7 +12,9 @@ import '../domain/contacts_repository.dart';
 
 /// Screen for creating a new contact
 class CreateContactScreen extends ConsumerStatefulWidget {
-  const CreateContactScreen({super.key});
+  const CreateContactScreen({super.key, this.contactId});
+
+  final int? contactId;
 
   @override
   ConsumerState<CreateContactScreen> createState() => _CreateContactScreenState();
@@ -27,6 +29,36 @@ class _CreateContactScreenState extends ConsumerState<CreateContactScreen> {
   final _emailController = TextEditingController();
   bool _isVip = false;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.contactId != null) {
+      _loadContact();
+    }
+  }
+
+  Future<void> _loadContact() async {
+    setState(() => _isLoading = true);
+    try {
+      final repository = ref.read(contactsRepositoryProvider);
+      final contact = await repository.getById(widget.contactId!);
+      if (contact != null) {
+        setState(() {
+          _nameController.text = contact.name;
+          _positionController.text = contact.position ?? '';
+          _companyController.text = contact.company ?? '';
+          _phoneController.text = contact.phoneNumber ?? '';
+          _emailController.text = contact.email ?? '';
+          _isVip = contact.isVip;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading contact: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -45,19 +77,31 @@ class _CreateContactScreenState extends ConsumerState<CreateContactScreen> {
 
     try {
       final repository = ref.read(contactsRepositoryProvider);
-      await repository.createContact(
-        name: _nameController.text.trim(),
-        position: _positionController.text.trim(),
-        company: _companyController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        isVip: _isVip,
-      );
+      if (widget.contactId != null) {
+        await repository.updateContact(
+          id: widget.contactId!,
+          name: _nameController.text.trim(),
+          position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : null,
+          company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : null,
+          phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+          email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
+          isVip: _isVip,
+        );
+      } else {
+        await repository.createContact(
+          name: _nameController.text.trim(),
+          position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : null,
+          company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : null,
+          phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+          email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
+          isVip: _isVip,
+        );
+      }
 
       if (mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تمت إضافة جهة الاتصال بنجاح')),
+          SnackBar(content: Text(widget.contactId != null ? 'تم تعديل جهة الاتصال بنجاح' : 'تمت إضافة جهة الاتصال بنجاح')),
         );
       }
     } catch (e) {
@@ -85,7 +129,7 @@ class _CreateContactScreenState extends ConsumerState<CreateContactScreen> {
           icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('إضافة جهة اتصال', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        title: Text(widget.contactId != null ? 'تعديل جهة الاتصال' : 'إضافة جهة اتصال', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -165,7 +209,7 @@ class _CreateContactScreenState extends ConsumerState<CreateContactScreen> {
               NeuButton(
                 onPressed: _isLoading ? null : _submit,
                 isLoading: _isLoading,
-                label: 'حفظ جهة الاتصال',
+                label: widget.contactId != null ? 'حفظ التعديلات' : 'حفظ جهة الاتصال',
                 icon: Icons.check_rounded,
               ),
               AppSpacing.gapXxl,

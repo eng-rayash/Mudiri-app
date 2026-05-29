@@ -10,6 +10,7 @@ import '../../../../shared/widgets/neu_button.dart';
 import '../../../../shared/widgets/neu_card.dart';
 import '../../domain/directives_repository.dart';
 import '../../providers/directives_provider.dart';
+import '../../../../core/router/route_names.dart';
 
 /// Directive Detail Page — shows full details of a directive.
 class DirectiveDetailPage extends ConsumerWidget {
@@ -55,9 +56,27 @@ class DirectiveDetailPage extends ConsumerWidget {
             onSelected: (value) {
               if (value == 'delete') {
                 _confirmDelete(context, ref);
+              } else if (value == 'edit') {
+                context.push(RouteNames.directiveEditPath(directiveId));
               }
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_rounded,
+                        color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'تعديل التوجيه',
+                      style: AppTypography.body.copyWith(
+                        color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'delete',
                 child: Row(

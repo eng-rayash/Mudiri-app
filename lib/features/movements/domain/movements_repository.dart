@@ -55,8 +55,36 @@ class MovementsRepository {
     );
   }
 
+  /// Update movement
+  Future<bool> updateMovement({
+    required int id,
+    required String destination,
+    String? purpose,
+    required String date,
+    required String time,
+    required int type,
+    String? notes,
+  }) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return _db.movementsDao.updateMovement(
+      MovementsCompanion(
+        destination: Value(destination),
+        purpose: Value(purpose),
+        date: Value(date),
+        time: Value(time),
+        type: Value(type),
+        notes: Value(notes),
+        updatedAt: Value(now),
+      ),
+      id,
+    );
+  }
+
   /// Soft delete a movement
   Future<bool> deleteMovement(int id) {
     return _db.movementsDao.deleteMovement(id);
   }
+
+  /// Get movement by ID
+  Future<Movement?> getById(int id) => _db.movementsDao.getById(id);
 }

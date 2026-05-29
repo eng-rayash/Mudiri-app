@@ -11,6 +11,8 @@ import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 import '../domain/contacts_repository.dart';
 
 /// Screen displaying the list of executive contacts with search & filter.
@@ -27,6 +29,31 @@ class _ContactsListScreenState
   String _searchQuery = '';
   String _vipFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الاسم (أبجدي)',
+      (a, b) => a.name.compareTo(b.name),
+    ),
+    SortOption(
+      'الجهة (أبجدي)',
+      (a, b) => (a.company ?? '').compareTo(b.company ?? ''),
+    ),
+    SortOption(
+      'الأهمية (VIP أولاً)',
+      (a, b) => (b.isVip ? 1 : 0).compareTo(a.isVip ? 1 : 0),
+    ),
+    SortOption(
+      'المضاف حديثاً',
+      (a, b) => b.id.compareTo(a.id),
+    ),
+    SortOption(
+      'المضاف قديماً',
+      (a, b) => a.id.compareTo(b.id),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -168,8 +195,16 @@ class _ContactsListScreenState
             : Text('تم تحديد ${_selectedIds.length}',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
-            ? null
+            ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
+              ]
             : [
+
                 contactsAsync.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -313,6 +348,8 @@ class _ContactsListScreenState
                     }).toList();
                   }
 
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
+
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -445,6 +482,17 @@ class _ContactsListScreenState
                                   ],
                                 ),
                               ),
+                              if (_selectedIds.isEmpty) ...[
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => context.push(RouteNames.contactEditPath(contact.id)),
+                                ),
+                              ],
                             ],
                           ),
                         ),

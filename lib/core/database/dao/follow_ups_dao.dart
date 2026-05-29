@@ -66,4 +66,8 @@ class FollowUpsDao extends DatabaseAccessor<AppDatabase> with _$FollowUpsDaoMixi
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  /// Get follow-up by id
+  Future<FollowUp?> getById(int id) =>
+      (select(followUps)..where((f) => f.id.equals(id))).getSingleOrNull();
 }

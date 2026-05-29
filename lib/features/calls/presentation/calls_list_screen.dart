@@ -11,6 +11,9 @@ import '../../../shared/widgets/neu_input.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
+import '../../../core/database/app_database.dart';
 import '../domain/calls_repository.dart';
 
 /// Calls List Screen — with search, filter by call type, multi-select, and export.
@@ -27,6 +30,27 @@ class _CallsListScreenState
   String _searchQuery = '';
   String _typeFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => '${b.date} ${b.time}'.compareTo('${a.date} ${a.time}'),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'),
+    ),
+    SortOption(
+      'الاسم (أبجدي)',
+      (a, b) => a.callerName.compareTo(b.callerName),
+    ),
+    SortOption(
+      'الأهمية (هام أولاً)',
+      (a, b) => (b.isImportant ? 1 : 0).compareTo(a.isImportant ? 1 : 0),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -75,6 +99,12 @@ class _CallsListScreenState
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(Icons.add_ic_call_rounded,
                       color: isDark
@@ -84,6 +114,7 @@ class _CallsListScreenState
                 ),
               ]
             : [
+
                 callsState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -233,6 +264,8 @@ class _CallsListScreenState
                     }).toList();
                   }
 
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
+
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -334,6 +367,17 @@ class _CallsListScreenState
                                   ],
                                 ),
                               ),
+                              if (_selectedIds.isEmpty) ...[
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _showAddCallModal(context, ref, isDark, editCall: call),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -390,11 +434,11 @@ class _CallsListScreenState
   }
 
   void _showAddCallModal(
-      BuildContext context, WidgetRef ref, bool isDark) {
-    final nameCtrl = TextEditingController();
-    final summaryCtrl = TextEditingController();
-    int selectedType = 0;
-    bool isImportant = false;
+      BuildContext context, WidgetRef ref, bool isDark, {CallItem? editCall}) {
+    final nameCtrl = TextEditingController(text: editCall?.callerName);
+    final summaryCtrl = TextEditingController(text: editCall?.summary);
+    int selectedType = editCall?.callType ?? 0;
+    bool isImportant = editCall?.isImportant ?? false;
 
     showModalBottomSheet(
       context: context,
@@ -420,7 +464,7 @@ class _CallsListScreenState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('تسجيل مكالمة جديدة',
+                  Text(editCall != null ? 'تعديل سجل المكالمة' : 'تسجيل مكالمة جديدة',
                       style: isDark
                           ? AppTypography.h3Dark
                           : AppTypography.h3,
@@ -502,9 +546,9 @@ class _CallsListScreenState
                   ),
                   AppSpacing.gapXl,
                   NeuButton(
-                    label: 'حفظ سجل المكالمة',
+                    label: editCall != null ? 'حفظ التعديلات' : 'حفظ سجل المكالمة',
                     icon: Icons.save_rounded,
-                    onPressed: () {
+                    onPressed: () async {
                       if (nameCtrl.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -515,15 +559,29 @@ class _CallsListScreenState
                         return;
                       }
                       final now = DateTime.now();
-                      ref.read(callsRepositoryProvider).logCall(
-                            callerName: nameCtrl.text.trim(),
-                            callType: selectedType,
-                            date: '${now.year}-${now.month}-${now.day}',
-                            time: '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
-                            summary: summaryCtrl.text.trim(),
-                            isImportant: isImportant,
-                          );
-                      ctx.pop();
+                      final repo = ref.read(callsRepositoryProvider);
+                      if (editCall != null) {
+                        await repo.updateCall(
+                          id: editCall.id,
+                          callerName: nameCtrl.text.trim(),
+                          callType: selectedType,
+                          date: editCall.date,
+                          time: editCall.time,
+                          phoneNumber: editCall.phoneNumber,
+                          summary: summaryCtrl.text.trim(),
+                          isImportant: isImportant,
+                        );
+                      } else {
+                        await repo.logCall(
+                          callerName: nameCtrl.text.trim(),
+                          callType: selectedType,
+                          date: '${now.year}-${now.month}-${now.day}',
+                          time: '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
+                          summary: summaryCtrl.text.trim(),
+                          isImportant: isImportant,
+                        );
+                      }
+                      if (ctx.mounted) ctx.pop();
                     },
                   ),
                 ],

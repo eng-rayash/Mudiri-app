@@ -13,6 +13,8 @@ import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 
 /// Movements List Screen — تحركات
 class MovementsListScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,27 @@ class MovementsListScreen extends ConsumerStatefulWidget {
 class _MovementsListScreenState extends ConsumerState<MovementsListScreen> {
   String _searchQuery = '';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => '${b.date} ${b.time}'.compareTo('${a.date} ${a.time}'),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'),
+    ),
+    SortOption(
+      'الوجهة (أبجدي)',
+      (a, b) => a.destination.compareTo(b.destination),
+    ),
+    SortOption(
+      'الغرض (أبجدي)',
+      (a, b) => (a.purpose ?? '').compareTo(b.purpose ?? ''),
+    ),
+  ];
+
 
   static const List<String> _types = ['خروج', 'عودة', 'مهمة خارجية'];
 
@@ -75,6 +98,12 @@ class _MovementsListScreenState extends ConsumerState<MovementsListScreen> {
               ),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(
                     Icons.add_circle_outline_rounded,
@@ -84,6 +113,7 @@ class _MovementsListScreenState extends ConsumerState<MovementsListScreen> {
                 ),
               ]
             : [
+
                 movementsState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -196,6 +226,8 @@ class _MovementsListScreenState extends ConsumerState<MovementsListScreen> {
                     }).toList();
                   }
 
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
+
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -302,6 +334,17 @@ class _MovementsListScreenState extends ConsumerState<MovementsListScreen> {
                                 ],
                               ),
                             ),
+                            if (_selectedIds.isEmpty) ...[
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit_rounded,
+                                  color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                  size: 20,
+                                ),
+                                onPressed: () => context.push(RouteNames.movementEditPath(movement.id)),
+                              ),
+                            ],
                           ],
                         ),
                       );

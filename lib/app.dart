@@ -7,6 +7,8 @@ import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
+import 'features/notifications/domain/notification_service.dart';
+
 /// Mudiri Application Root Widget.
 ///
 /// Configures:
@@ -15,11 +17,30 @@ import 'core/theme/app_theme.dart';
 /// - GoRouter navigation
 /// - Riverpod state management
 /// - Dynamic theme mode via ThemeNotifier
-class MudiriApp extends ConsumerWidget {
+class MudiriApp extends ConsumerStatefulWidget {
   const MudiriApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MudiriApp> createState() => _MudiriAppState();
+}
+
+class _MudiriAppState extends ConsumerState<MudiriApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      await ref.read(notificationServiceProvider).init();
+    } catch (e) {
+      debugPrint('Error initializing notifications: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
 
     return MaterialApp.router(

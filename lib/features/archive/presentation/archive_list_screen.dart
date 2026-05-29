@@ -13,6 +13,7 @@ import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/export_button.dart';
+import '../../../shared/widgets/sort_menu.dart';
 import '../../reports/domain/export_service.dart';
 import '../domain/archive_repository.dart';
 import '../providers/archive_categories_provider.dart';
@@ -32,6 +33,30 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'الكل';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => (b.createdAt).compareTo(a.createdAt),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => (a.createdAt).compareTo(b.createdAt),
+    ),
+    SortOption(
+      'الموضوع (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'الرقم المرجعي',
+      (a, b) => (a.referenceNumber ?? '').compareTo(b.referenceNumber ?? ''),
+    ),
+    SortOption(
+      'النوع',
+      (a, b) => (a.category ?? '').compareTo(b.category ?? ''),
+    ),
+  ];
 
   @override
   void dispose() {
@@ -323,42 +348,52 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
               }).toList();
 
               if (_selectedIds.isEmpty) {
-                return ExportButton(
-                  itemCount: filteredDocs.length,
-                  onExport: (format) async {
-                    final exportService = ref.read(exportServiceProvider);
-                    await exportService.exportDataList<ArchiveData>(
-                      context: context,
-                      title: 'أرشيف المذكرات الرسمية',
-                      items: filteredDocs,
-                      headers: [
-                        'م',
-                        'الموضوع',
-                        'النوع',
-                        'الرقم المرجعي',
-                        'التاريخ الميلادي',
-                        'التاريخ الهجري',
-                        'الجهة الموجهة إليها',
-                        'الملاحظات',
-                        'سرية للغاية'
-                      ],
-                      itemMapper: (list) => List.generate(list.length, (idx) {
-                        final doc = list[idx];
-                        return [
-                          '${idx + 1}',
-                          doc.title,
-                          doc.category ?? '',
-                          doc.referenceNumber ?? '',
-                          doc.documentDate ?? '',
-                          doc.hijriDate ?? '',
-                          doc.directedEntity ?? '',
-                          doc.notes ?? '',
-                          doc.isConfidential ? 'نعم' : 'لا',
-                        ];
-                      }),
-                      format: format,
-                    );
-                  },
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SortMenu(
+                      options: _sortOptions,
+                      selectedIndex: _selectedSortIndex,
+                      onSelected: (index) => setState(() => _selectedSortIndex = index),
+                    ),
+                    ExportButton(
+                      itemCount: filteredDocs.length,
+                      onExport: (format) async {
+                        final exportService = ref.read(exportServiceProvider);
+                        await exportService.exportDataList<ArchiveData>(
+                          context: context,
+                          title: 'أرشيف المذكرات الرسمية',
+                          items: filteredDocs,
+                          headers: [
+                            'م',
+                            'الموضوع',
+                            'النوع',
+                            'الرقم المرجعي',
+                            'التاريخ الميلادي',
+                            'التاريخ الهجري',
+                            'الجهة الموجهة إليها',
+                            'الملاحظات',
+                            'سرية للغاية'
+                          ],
+                          itemMapper: (list) => List.generate(list.length, (idx) {
+                            final doc = list[idx];
+                            return [
+                              '${idx + 1}',
+                              doc.title,
+                              doc.category ?? '',
+                              doc.referenceNumber ?? '',
+                              doc.documentDate ?? '',
+                              doc.hijriDate ?? '',
+                              doc.directedEntity ?? '',
+                              doc.notes ?? '',
+                              doc.isConfidential ? 'نعم' : 'لا',
+                            ];
+                          }),
+                          format: format,
+                        );
+                      },
+                    ),
+                  ],
                 );
               } else {
                 return Row(
@@ -543,6 +578,9 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                     if (_selectedFilter == 'سري للغاية 🔒') return doc.isConfidential;
                     return doc.category?.toLowerCase() == _selectedFilter.toLowerCase();
                   }).toList();
+
+                  // Apply Sort
+                  filteredDocs.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filteredDocs.isEmpty) {
                     return EmptyState(
@@ -760,11 +798,11 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                               ),
                             ],
 
-                            // Actions Area: Open Scanned PDF & Share
-                            if (hasPdf) ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
+                            // Actions Area: Open Scanned PDF, Edit, Share
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                if (hasPdf) ...[
                                   Expanded(
                                     child: NeuButton(
                                       onPressed: () => _openPdf(doc),
@@ -774,22 +812,40 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
+                                ] else ...[
+                                  const Spacer(),
+                                ],
+                                GestureDetector(
+                                  onTap: () => context.push(RouteNames.archiveEditPath(doc.id)),
+                                  child: AnimatedContainer(
+                                    duration: NeuDecorations.pressDuration,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: NeuDecorations.neuFlat(radius: 12, isDark: isDark),
+                                    child: Icon(
+                                      Icons.edit_rounded,
+                                      color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                if (hasPdf) ...[
+                                  const SizedBox(width: 12),
                                   GestureDetector(
                                     onTap: () => _sharePdf(doc),
                                     child: AnimatedContainer(
                                       duration: NeuDecorations.pressDuration,
                                       padding: const EdgeInsets.all(12),
                                       decoration: NeuDecorations.neuFlat(radius: 12, isDark: isDark),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.share_rounded,
-                                        color: NeuColors.navyMid,
+                                        color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
                                         size: 20,
                                       ),
                                     ),
                                   ),
                                 ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ],
                         ),
                       );

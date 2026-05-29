@@ -123,8 +123,8 @@ final timelineProvider = Provider<List<TimelineEvent>>((ref) {
     ));
   }
 
-  // Sort events by time chronologically
-  events.sort((a, b) => a.time.compareTo(b.time));
+  // Sort events by time reverse-chronologically (descending)
+  events.sort((a, b) => b.time.compareTo(a.time));
 
   return events;
 });

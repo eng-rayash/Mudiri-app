@@ -14,7 +14,9 @@ import '../../../shared/widgets/neu_input.dart';
 
 /// Create Follow-up Screen
 class CreateFollowupScreen extends ConsumerStatefulWidget {
-  const CreateFollowupScreen({super.key});
+  const CreateFollowupScreen({super.key, this.followupId});
+
+  final int? followupId;
 
   @override
   ConsumerState<CreateFollowupScreen> createState() => _CreateFollowupScreenState();
@@ -30,6 +32,44 @@ class _CreateFollowupScreenState extends ConsumerState<CreateFollowupScreen> {
   FollowUpEntityType _selectedType = FollowUpEntityType.meeting;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.followupId != null) {
+      _loadFollowup();
+    }
+  }
+
+  Future<void> _loadFollowup() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final repository = ref.read(followUpsRepositoryProvider);
+      final followup = await repository.getById(widget.followupId!);
+      if (followup != null) {
+        setState(() {
+          _titleController.text = followup.title;
+          _notesController.text = followup.notes ?? '';
+          _assignedToController.text = followup.assignedTo ?? '';
+          _selectedPriority = Priority.values.firstWhere(
+            (p) => p.value == followup.priority,
+            orElse: () => Priority.medium,
+          );
+          _selectedType = FollowUpEntityType.values.firstWhere(
+            (t) => t.value == followup.entityType,
+            orElse: () => FollowUpEntityType.meeting,
+          );
+          if (followup.targetDate != null) {
+            _selectedDate = DateTime.tryParse(followup.targetDate!) ?? DateTime.now();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading followup: $e');
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -57,18 +97,30 @@ class _CreateFollowupScreenState extends ConsumerState<CreateFollowupScreen> {
     try {
       final repository = ref.read(followUpsRepositoryProvider);
       
-      await repository.createFollowUp(
-        title: _titleController.text,
-        type: _selectedType,
-        priority: _selectedPriority,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        targetDate: _selectedDate.toIso8601String().split('T').first,
-        assignedTo: _assignedToController.text.isNotEmpty ? _assignedToController.text : null,
-      );
+      if (widget.followupId != null) {
+        await repository.updateFollowUp(
+          id: widget.followupId!,
+          title: _titleController.text,
+          type: _selectedType,
+          priority: _selectedPriority,
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          targetDate: _selectedDate.toIso8601String().split('T').first,
+          assignedTo: _assignedToController.text.isNotEmpty ? _assignedToController.text : null,
+        );
+      } else {
+        await repository.createFollowUp(
+          title: _titleController.text,
+          type: _selectedType,
+          priority: _selectedPriority,
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          targetDate: _selectedDate.toIso8601String().split('T').first,
+          assignedTo: _assignedToController.text.isNotEmpty ? _assignedToController.text : null,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إضافة المتابعة بنجاح')),
+          SnackBar(content: Text(widget.followupId != null ? 'تم تعديل المتابعة بنجاح' : 'تم إضافة المتابعة بنجاح')),
         );
         context.pop();
       }
@@ -94,7 +146,7 @@ class _CreateFollowupScreenState extends ConsumerState<CreateFollowupScreen> {
           icon: Icon(Icons.close_rounded, color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('إضافة متابعة جديدة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
+        title: Text(widget.followupId != null ? 'تعديل المتابعة' : 'إضافة متابعة جديدة', style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         centerTitle: true,
       ),
       body: Directionality(
@@ -194,7 +246,7 @@ class _CreateFollowupScreenState extends ConsumerState<CreateFollowupScreen> {
               }).toList()),
               AppSpacing.gapXxl,
 
-              NeuButton(label: 'حفظ المتابعة', onPressed: _isSubmitting ? null : _submit, isLoading: _isSubmitting, icon: Icons.check_rounded),
+              NeuButton(label: widget.followupId != null ? 'حفظ التعديلات' : 'حفظ المتابعة', onPressed: _isSubmitting ? null : _submit, isLoading: _isSubmitting, icon: Icons.check_rounded),
               AppSpacing.gapXxl,
             ],
           ),

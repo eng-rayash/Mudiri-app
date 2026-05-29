@@ -44,4 +44,8 @@ class ContactsDao extends DatabaseAccessor<AppDatabase> with _$ContactsDaoMixin 
           updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
+
+  /// Get contact by id
+  Future<Contact?> getById(int id) =>
+      (select(contacts)..where((c) => c.id.equals(id))).getSingleOrNull();
 }

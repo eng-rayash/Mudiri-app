@@ -56,11 +56,48 @@ class FollowUpsRepository {
     await _logger.log(SecurityAction.settingsChanged, details: 'تحديث حالة المتابعة #$id');
   }
 
+  /// Update follow-up
+  Future<bool> updateFollowUp({
+    required int id,
+    required String title,
+    required FollowUpEntityType type,
+    required Priority priority,
+    String? notes,
+    String? targetDate,
+    int? entityId,
+    String? assignedTo,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    final success = await _db.followUpsDao.updateFollowUp(
+      FollowUpsCompanion(
+        title: drift.Value(title),
+        entityType: drift.Value(type.value),
+        priority: drift.Value(priority.value),
+        notes: drift.Value(notes),
+        targetDate: drift.Value(targetDate),
+        entityId: drift.Value(entityId),
+        assignedTo: drift.Value(assignedTo),
+        updatedAt: drift.Value(now),
+      ),
+      id,
+    );
+
+    if (success) {
+      await _logger.log(SecurityAction.settingsChanged, details: 'تعديل المتابعة: $title');
+    }
+
+    return success;
+  }
+
   /// Delete (soft)
   Future<void> deleteFollowUp(int id) async {
     await _db.followUpsDao.softDelete(id);
     await _logger.logRecordDeleted('متابعة', id);
   }
+
+  /// Get follow-up by ID
+  Future<FollowUp?> getById(int id) => _db.followUpsDao.getById(id);
 }
 
 /// Provider for FollowUpsRepository

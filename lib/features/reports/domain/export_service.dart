@@ -16,6 +16,7 @@ import '../../../core/utils/arabic_reshaper.dart';
 import '../../../core/security/security_logger.dart';
 import '../../../core/database/providers/database_providers.dart';
 import '../providers/reports_provider.dart';
+import '../../../core/services/file_storage_service.dart';
 
 /// Export format options centrally defined
 enum ExportFormat {
@@ -68,8 +69,12 @@ class ExportService {
 
       // Write to temp file
       final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/mudiri_report_$dateStr.txt');
+      final filename = 'mudiri_report_$dateStr.txt';
+      final tempFile = File('${tempDir.path}/$filename');
       await tempFile.writeAsString(sb.toString());
+
+      // Save a copy to public folder on device
+      await FileStorageService().saveToPublicFolder(tempFile, filename, isArchive: false);
 
       await _logger.logDataExport('تقرير يومي (نص)');
 
@@ -108,8 +113,19 @@ class ExportService {
         sb.writeln('تم التصدير عبر نظام مديري للإدارة التنفيذية.');
 
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/mudiri_export_$dateStr.txt');
+        final filename = 'mudiri_export_$dateStr.txt';
+        final file = File('${tempDir.path}/$filename');
         await file.writeAsString(sb.toString());
+
+        final savedPath = await FileStorageService().saveToPublicFolder(file, filename, isArchive: false);
+        if (savedPath != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم حفظ التصدير في مجلد التطبيق: $filename', textDirection: TextDirection.rtl),
+              backgroundColor: const Color(0xFF1B2A4A),
+            ),
+          );
+        }
 
         await _logger.logDataExport('$title (تقرير نصي)');
         await Share.shareXFiles([XFile(file.path)], text: 'تقرير $title');
@@ -284,8 +300,19 @@ class ExportService {
         }
 
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/mudiri_excel_$dateStr.xlsx');
+        final filename = 'mudiri_excel_$dateStr.xlsx';
+        final file = File('${tempDir.path}/$filename');
         await file.writeAsBytes(fileBytes);
+
+        final savedPath = await FileStorageService().saveToPublicFolder(file, filename, isArchive: false);
+        if (savedPath != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم حفظ التصدير في مجلد التطبيق: $filename', textDirection: TextDirection.rtl),
+              backgroundColor: const Color(0xFF1B2A4A),
+            ),
+          );
+        }
 
         await _logger.logDataExport('$title (جدول إكسل XLSX)');
         await Share.shareXFiles([XFile(file.path)], text: 'جدول إكسل - $title');
@@ -466,8 +493,19 @@ class ExportService {
         // Save PDF and share
         final fileBytes = await pdf.save();
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/mudiri_report_$dateStr.pdf');
+        final filename = 'mudiri_report_$dateStr.pdf';
+        final file = File('${tempDir.path}/$filename');
         await file.writeAsBytes(fileBytes);
+
+        final savedPath = await FileStorageService().saveToPublicFolder(file, filename, isArchive: false);
+        if (savedPath != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم حفظ التصدير في مجلد التطبيق: $filename', textDirection: TextDirection.rtl),
+              backgroundColor: const Color(0xFF1B2A4A),
+            ),
+          );
+        }
 
         await _logger.logDataExport('$title (تقرير PDF)');
         await Share.shareXFiles([XFile(file.path)], text: 'تقرير PDF - $title');

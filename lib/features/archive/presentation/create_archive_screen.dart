@@ -21,12 +21,16 @@ import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/neu_input.dart';
 import '../domain/archive_repository.dart';
 import '../providers/archive_categories_provider.dart';
+import '../../../core/services/document_scanner_service.dart';
+import '../../../core/database/providers/database_providers.dart';
 
 /// Professional Executive screen for creating a new official Memo.
 /// Includes camera scanner, auto Hijri/Gregorian date formatting,
 /// and automated high-quality scanned PDF generation.
 class CreateArchiveScreen extends ConsumerStatefulWidget {
-  const CreateArchiveScreen({super.key});
+  const CreateArchiveScreen({super.key, this.archiveId});
+
+  final int? archiveId;
 
   @override
   ConsumerState<CreateArchiveScreen> createState() =>
@@ -35,6 +39,42 @@ class CreateArchiveScreen extends ConsumerStatefulWidget {
 
 class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.archiveId != null) {
+      _loadArchiveData();
+    }
+  }
+
+  Future<void> _loadArchiveData() async {
+    final db = ref.read(databaseProvider);
+    final doc = await db.archiveDao.getById(widget.archiveId!);
+    if (doc != null) {
+      setState(() {
+        _titleController.text = doc.title;
+        _refNumberController.text = doc.referenceNumber ?? '';
+        _categoryController.text = doc.category ?? '';
+        _directedEntityController.text = doc.directedEntity ?? '';
+        _notesController.text = doc.notes ?? '';
+        _isConfidential = doc.isConfidential;
+        
+        if (doc.documentDate != null) {
+          _gregorianDateStr = doc.documentDate;
+          _selectedDate = DateTime.tryParse(doc.documentDate!);
+        }
+        _hijriDateStr = doc.hijriDate;
+        if (_gregorianDateStr != null && _hijriDateStr != null) {
+          _dateController.text = '$_gregorianDateStr م  |  $_hijriDateStr هـ';
+        }
+        
+        if (doc.localFilePath != null && doc.localFilePath!.isNotEmpty) {
+          _pickedDocument = File(doc.localFilePath!);
+        }
+      });
+    }
+  }
 
   // Controllers
   final _titleController = TextEditingController();
@@ -108,20 +148,173 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
     }
   }
 
-  // --- Image Pickers ---
+  // --- Image Pickers & Filters ---
+  Future<File?> _showFilterDialog(File croppedFile) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    DocumentFilter selectedFilter = DocumentFilter.documentBW;
+    final scannerService = DocumentScannerService();
+    
+    return await showModalBottomSheet<File>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'تطبيق فلتر المستند',
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(fontSize: 18),
+                    textAlign: TextAlign.center,
+                  ),
+                  AppSpacing.gapMd,
+                  Expanded(
+                    child: Center(
+                      child: FutureBuilder<File?>(
+                        future: scannerService.applyFilter(croppedFile, selectedFilter),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const CircularProgressIndicator(color: NeuColors.navyMid);
+                          }
+                          if (snapshot.hasData && snapshot.data != null) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.file(
+                                snapshot.data!,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          }
+                          return Image.file(croppedFile, fit: BoxFit.contain);
+                        },
+                      ),
+                    ),
+                  ),
+                  AppSpacing.gapLg,
+                  Text(
+                    'اختر الفلتر المناسب لوضوح الورقة (مثل CamScanner):',
+                    style: isDark ? AppTypography.captionDark : AppTypography.caption,
+                    textAlign: TextAlign.center,
+                  ),
+                  AppSpacing.gapSm,
+                  SizedBox(
+                    height: 90,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: DocumentFilter.values.map((filter) {
+                        final isSelected = filter == selectedFilter;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              setModalState(() {
+                                selectedFilter = filter;
+                              });
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: isSelected
+                                      ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                                      : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
+                                  child: Icon(
+                                    filter.icon,
+                                    color: isSelected
+                                        ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                                        : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
+                                    size: 28,
+                                  ),
+                                ),
+                                AppSpacing.gapXs,
+                                Text(
+                                  filter.arabicLabel,
+                                  style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  AppSpacing.gapLg,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, null),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('إلغاء'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final resultFile = await scannerService.applyFilter(croppedFile, selectedFilter);
+                            if (context.mounted) {
+                              Navigator.pop(context, resultFile);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                            foregroundColor: isDark ? NeuColors.bgColorDark : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('تطبيق'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _captureWithCamera() async {
     try {
       final image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85,
-        maxWidth: 1600,
-        maxHeight: 1600,
+        imageQuality: 100,
+        maxWidth: 2400,
+        maxHeight: 2400,
       );
       if (image != null) {
-        setState(() {
-          _capturedImages.add(File(image.path));
-          _pickedDocument = null; // Clear picked document if images are used
-        });
+        final cropped = await DocumentScannerService().cropImage(File(image.path));
+        if (cropped != null) {
+          final filtered = await _showFilterDialog(cropped);
+          if (filtered != null) {
+            setState(() {
+              _capturedImages.add(filtered);
+              _pickedDocument = null; // Clear picked document if images are used
+            });
+          }
+        }
       }
     } catch (e) {
       _showSnackBar('خطأ أثناء التقاط الصورة: $e');
@@ -131,15 +324,23 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
   Future<void> _selectFromGallery() async {
     try {
       final images = await _picker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1600,
-        maxHeight: 1600,
+        imageQuality: 100,
+        maxWidth: 2400,
+        maxHeight: 2400,
       );
       if (images.isNotEmpty) {
-        setState(() {
-          _capturedImages.addAll(images.map((x) => File(x.path)));
-          _pickedDocument = null; // Clear picked document if images are used
-        });
+        for (final xfile in images) {
+          final cropped = await DocumentScannerService().cropImage(File(xfile.path));
+          if (cropped != null) {
+            final filtered = await _showFilterDialog(cropped);
+            if (filtered != null) {
+              setState(() {
+                _capturedImages.add(filtered);
+                _pickedDocument = null; // Clear picked document if images are used
+              });
+            }
+          }
+        }
       }
     } catch (e) {
       _showSnackBar('خطأ أثناء اختيار الصور: $e');
@@ -179,6 +380,12 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
     final fileStorage = FileStorageService();
 
     if (_pickedDocument != null) {
+      // If the file is already in the application documents/archive folder, don't copy it onto itself
+      final docDir = await getApplicationDocumentsDirectory();
+      if (_pickedDocument!.path.startsWith(docDir.path)) {
+        return _pickedDocument!.path;
+      }
+
       final ext = _pickedDocument!.path.split('.').last;
       final filename = FileStorageService.generateFileName(
         title: titleStr,
@@ -272,27 +479,45 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
           .addCategory(finalCategory);
 
       // Compile images into a high-quality PDF or copy picked document
-      String? localPdfPath;
-      if (_capturedImages.isNotEmpty || _pickedDocument != null) {
+      String? localPdfPath = _pickedDocument?.path;
+      if (_capturedImages.isNotEmpty) {
+        localPdfPath = await _generateOrCopyDocument();
+      } else if (_pickedDocument != null) {
         localPdfPath = await _generateOrCopyDocument();
       }
 
       final repository = ref.read(archiveRepositoryProvider);
-      await repository.createArchiveRecord(
-        title: _titleController.text.trim(),
-        referenceNumber: _refNumberController.text.trim(),
-        documentDate: _gregorianDateStr,
-        hijriDate: _hijriDateStr,
-        directedEntity: _directedEntityController.text.trim(),
-        category: finalCategory,
-        localFilePath: localPdfPath,
-        tags: '',
-        notes: _notesController.text.trim(),
-        isConfidential: _isConfidential,
-      );
+      if (widget.archiveId != null) {
+        await repository.updateArchiveRecord(
+          id: widget.archiveId!,
+          title: _titleController.text.trim(),
+          referenceNumber: _refNumberController.text.trim(),
+          documentDate: _gregorianDateStr,
+          hijriDate: _hijriDateStr,
+          directedEntity: _directedEntityController.text.trim(),
+          category: finalCategory,
+          localFilePath: localPdfPath,
+          tags: '',
+          notes: _notesController.text.trim(),
+          isConfidential: _isConfidential,
+        );
+      } else {
+        await repository.createArchiveRecord(
+          title: _titleController.text.trim(),
+          referenceNumber: _refNumberController.text.trim(),
+          documentDate: _gregorianDateStr,
+          hijriDate: _hijriDateStr,
+          directedEntity: _directedEntityController.text.trim(),
+          category: finalCategory,
+          localFilePath: localPdfPath,
+          tags: '',
+          notes: _notesController.text.trim(),
+          isConfidential: _isConfidential,
+        );
+      }
 
       if (mounted) {
-        _showSnackBar('تم حفظ وأرشفة المذكرة الرسمية بنجاح');
+        _showSnackBar(widget.archiveId != null ? 'تم تعديل المذكرة مؤرشفة بنجاح' : 'تم حفظ وأرشفة المذكرة الرسمية بنجاح');
         context.pop(true); // Return success to trigger list refresh
       }
     } catch (e) {
@@ -323,7 +548,7 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'أرشفة مذكرة رسمية جديدة',
+          widget.archiveId != null ? 'تعديل المذكرة مؤرشفة' : 'أرشفة مذكرة رسمية جديدة',
           style: isDark ? AppTypography.h3Dark : AppTypography.h3,
         ),
         centerTitle: true,
@@ -853,7 +1078,7 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                 NeuButton(
                   onPressed: _isLoading ? null : _submit,
                   isLoading: _isLoading,
-                  label: 'حفظ المذكرة في الأرشيف',
+                  label: widget.archiveId != null ? 'حفظ التعديلات' : 'حفظ المذكرة في الأرشيف',
                   icon: Icons.save_rounded,
                 ),
                 AppSpacing.gapXxl,

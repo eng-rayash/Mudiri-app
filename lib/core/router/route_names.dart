@@ -35,6 +35,8 @@ class RouteNames {
   // ─────────────────────────────────────────────
   
   static const String followupCreate = '/followups/create';
+  static const String followupEdit = '/followups/:id/edit';
+  static String followupEditPath(int id) => '/followups/$id/edit';
 
   // ─────────────────────────────────────────────
   // Tasks Routes
@@ -77,7 +79,9 @@ class RouteNames {
 
   static const String contactsList = '/contacts';
   static const String contactCreate = '/contacts/create';
+  static const String contactEdit = '/contacts/:id/edit';
   static String contactDetailPath(int id) => '/contacts/$id';
+  static String contactEditPath(int id) => '/contacts/$id/edit';
 
   // ─────────────────────────────────────────────
   // Appointments Routes (Phase 3)
@@ -85,10 +89,14 @@ class RouteNames {
   // Phase 3 Modules
   static const String appointmentsList = '/appointments';
   static const String appointmentCreate = '/appointments/create';
+  static const String appointmentEdit = '/appointments/:id/edit';
+  static String appointmentEditPath(int id) => '/appointments/$id/edit';
   
   static const String archiveList = '/archive';
   static const String archiveCreate = '/archive/create';
   static const String archivePdfViewer = '/archive/pdf-viewer';
+  static const String archiveEdit = '/archive/:id/edit';
+  static String archiveEditPath(int id) => '/archive/$id/edit';
 
   // Phase 4 Modules
   static const String callsList = '/calls';
@@ -104,6 +112,8 @@ class RouteNames {
   // ─────────────────────────────────────────────
   static const String movementsList = '/movements';
   static const String movementCreate = '/movements/create';
+  static const String movementEdit = '/movements/:id/edit';
+  static String movementEditPath(int id) => '/movements/$id/edit';
 
   // ─────────────────────────────────────────────
   // Directives Routes
@@ -112,7 +122,9 @@ class RouteNames {
   static const String directivesList = '/directives';
   static const String directiveCreate = '/directives/create';
   static const String directiveDetail = '/directives/:id';
+  static const String directiveEdit = '/directives/:id/edit';
   static String directiveDetailPath(int id) => '/directives/$id';
+  static String directiveEditPath(int id) => '/directives/$id/edit';
 
   // ─────────────────────────────────────────────
   // Reports Routes

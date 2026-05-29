@@ -12,6 +12,8 @@ import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 import '../providers/meetings_provider.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/constants/enums.dart';
@@ -32,6 +34,27 @@ class _MeetingsListScreenState
   String _searchQuery = '';
   String _statusFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => '${b.date} ${b.time}'.compareTo('${a.date} ${a.time}'),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'نوع الاجتماع',
+      (a, b) => a.meetingType.compareTo(b.meetingType),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -447,6 +470,12 @@ class _MeetingsListScreenState
                 ? AppTypography.h2Dark
                 : AppTypography.h2),
         const Spacer(),
+        SortMenu(
+          options: _sortOptions,
+          selectedIndex: _selectedSortIndex,
+          onSelected: (index) => setState(() => _selectedSortIndex = index),
+        ),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: () =>
               context.push(RouteNames.meetingCreate),
@@ -468,6 +497,7 @@ class _MeetingsListScreenState
       ],
     );
   }
+
 
   List<Meeting> _applyFilters(List<Meeting> meetings) {
     var filtered = meetings;
@@ -493,6 +523,9 @@ class _MeetingsListScreenState
             m.date.contains(q);
       }).toList();
     }
+
+    filtered = filtered.toList();
+    filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
     return filtered;
   }

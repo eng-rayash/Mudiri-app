@@ -120,6 +120,13 @@ class AppRouter {
         path: RouteNames.contactCreate,
         builder: (context, state) => const CreateContactScreen(),
       ),
+      GoRoute(
+        path: RouteNames.contactEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateContactScreen(contactId: id);
+        },
+      ),
 
       // ─── Appointment Routes ───
       GoRoute(
@@ -130,10 +137,24 @@ class AppRouter {
         path: RouteNames.appointmentCreate,
         builder: (context, state) => const CreateAppointmentScreen(),
       ),
+      GoRoute(
+        path: RouteNames.appointmentEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateAppointmentScreen(appointmentId: id);
+        },
+      ),
 
       GoRoute(
         path: RouteNames.archiveCreate,
         builder: (context, state) => const CreateArchiveScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.archiveEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateArchiveScreen(archiveId: id);
+        },
       ),
       GoRoute(
         path: RouteNames.archivePdfViewer,
@@ -173,6 +194,13 @@ class AppRouter {
         path: RouteNames.movementCreate,
         builder: (context, state) => const CreateMovementScreen(),
       ),
+      GoRoute(
+        path: RouteNames.movementEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateMovementScreen(movementId: id);
+        },
+      ),
 
       // ─── Encounters Routes ───
       GoRoute(
@@ -196,6 +224,13 @@ class AppRouter {
       GoRoute(
         path: RouteNames.followupCreate,
         builder: (context, state) => const CreateFollowupScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.followupEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateFollowupScreen(followupId: id);
+        },
       ),
 
       // ─── Meeting Routes (outside shell) ───
@@ -256,6 +291,13 @@ class AppRouter {
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
           return DirectiveDetailPage(directiveId: id);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.directiveEdit,
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return CreateDirectivePage(directiveId: id);
         },
       ),
 

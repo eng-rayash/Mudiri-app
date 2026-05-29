@@ -14,7 +14,9 @@ import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
 import '../../../shared/widgets/neu_button.dart';
+
 import '../domain/meetings_repository.dart';
 
 /// Encounters List Screen — اللقاءات السريعة
@@ -28,6 +30,23 @@ class EncountersListScreen extends ConsumerStatefulWidget {
 class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
   String _searchQuery = '';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => '${b.date} ${b.time}'.compareTo('${a.date} ${a.time}'),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+  ];
+
 
   void _toggleSelection(int id) {
     setState(() {
@@ -76,6 +95,12 @@ class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
               ),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(
                     Icons.add_circle_outline_rounded,
@@ -85,6 +110,7 @@ class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
                 ),
               ]
             : [
+
                 meetingsState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -202,6 +228,8 @@ class _EncountersListScreenState extends ConsumerState<EncountersListScreen> {
                           (m.notes ?? '').toLowerCase().contains(q);
                     }).toList();
                   }
+
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filtered.isEmpty) {
                     return Center(

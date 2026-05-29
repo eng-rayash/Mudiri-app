@@ -56,6 +56,29 @@ class VisitorsRepository {
 
   Stream<List<VisitorItem>> watchActiveVisitors() => _dao.watchActiveVisitors();
 
+  Future<bool> updateVisitor({
+    required int id,
+    required String visitorName,
+    String? company,
+    String? purpose,
+    String? appointmentId,
+    String? entryTime,
+    String? exitTime,
+    int? status,
+  }) async {
+    final companion = VisitorsCompanion(
+      visitorName: Value(visitorName),
+      company: company != null ? Value(company) : const Value.absent(),
+      purpose: purpose != null ? Value(purpose) : const Value.absent(),
+      appointmentId: appointmentId != null ? Value(appointmentId) : const Value.absent(),
+      entryTime: entryTime != null ? Value(entryTime) : const Value.absent(),
+      exitTime: exitTime != null ? Value(exitTime) : const Value.absent(),
+      status: status != null ? Value(status) : const Value.absent(),
+      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+    );
+    return await _dao.updateVisitor(companion, id);
+  }
+
   Future<void> deleteVisitor(int id) async {
     await _dao.softDelete(id);
     await _logger.logRecordDeleted('زائر', id);

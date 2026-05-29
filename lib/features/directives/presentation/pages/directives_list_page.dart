@@ -13,6 +13,8 @@ import '../../../../shared/widgets/export_button.dart';
 import '../../../../shared/widgets/neu_button.dart';
 import '../../../../shared/widgets/neu_card.dart';
 import '../../../reports/domain/export_service.dart';
+import '../../../../shared/widgets/sort_menu.dart';
+
 import '../../providers/directives_provider.dart';
 import '../../widgets/directive_card.dart';
 import '../../domain/directives_repository.dart';
@@ -30,6 +32,31 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'تاريخ التوجيه (الأحدث)',
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    ),
+    SortOption(
+      'تاريخ التوجيه (الأقدم)',
+      (a, b) => a.createdAt.compareTo(b.createdAt),
+    ),
+    SortOption(
+      'موعد الاستحقاق',
+      (a, b) => (a.deadline ?? '').compareTo(b.deadline ?? ''),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'الحالة',
+      (a, b) => a.status.compareTo(b.status),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -80,6 +107,12 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
               ),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(
                     Icons.add_rounded,
@@ -89,6 +122,7 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                 ),
               ]
             : [
+
                 directivesAsync.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -238,6 +272,8 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                               .contains(q);
                     }).toList();
                   }
+
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filtered.isEmpty) {
                     return EmptyState(

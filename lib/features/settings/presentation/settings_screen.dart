@@ -34,6 +34,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
+  bool _notificationsEnabled = true;
+  bool _overdueAlertsEnabled = true;
 
   @override
   void initState() {
@@ -46,6 +48,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _biometricAvailable = await authService.isBiometricAvailable();
     final method = await authService.getPreferredAuthMethod();
     _biometricEnabled = method == 0 && _biometricAvailable;
+
+    final storage = SecureStorageService.instance;
+    final notificationsVal = await storage.read('notifications_enabled');
+    final overdueVal = await storage.read('overdue_alerts_enabled');
+
+    _notificationsEnabled = notificationsVal != 'false';
+    _overdueAlertsEnabled = overdueVal != 'false';
+
     if (mounted) setState(() {});
   }
 
@@ -61,6 +71,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await authService.setPreferredAuthMethod(1);
       setState(() => _biometricEnabled = false);
     }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    final storage = SecureStorageService.instance;
+    await storage.write('notifications_enabled', value.toString());
+    setState(() => _notificationsEnabled = value);
+  }
+
+  Future<void> _toggleOverdueAlerts(bool value) async {
+    final storage = SecureStorageService.instance;
+    await storage.write('overdue_alerts_enabled', value.toString());
+    setState(() => _overdueAlertsEnabled = value);
   }
 
   @override
@@ -294,8 +316,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icons.notifications_active_rounded,
                 title: 'تفعيل الإشعارات',
                 subtitle: 'تذكيرات الاجتماعات والمهام',
-                value: true,
-                onChanged: (v) {},
+                value: _notificationsEnabled,
+                onChanged: _toggleNotifications,
               ),
 
               _buildToggleTile(
@@ -303,8 +325,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icons.warning_rounded,
                 title: 'تنبيهات المهام المتأخرة',
                 subtitle: 'إشعار عند تأخر مهمة',
-                value: true,
-                onChanged: (v) {},
+                value: _overdueAlertsEnabled,
+                onChanged: _toggleOverdueAlerts,
               ),
 
               AppSpacing.gapXxl,

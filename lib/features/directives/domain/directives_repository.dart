@@ -54,11 +54,46 @@ class DirectivesRepository {
     await _logger.log(SecurityAction.settingsChanged, details: 'تحديث حالة التوجيه #$id');
   }
 
+  /// Update directive
+  Future<bool> updateDirective({
+    required int id,
+    required String title,
+    required Priority priority,
+    String? details,
+    String? source,
+    String? assignedTo,
+    String? deadline,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    final success = await _db.directivesDao.updateDirective(
+      DirectivesCompanion(
+        title: drift.Value(title),
+        priority: drift.Value(priority.value),
+        details: drift.Value(details),
+        source: drift.Value(source),
+        assignedTo: drift.Value(assignedTo),
+        deadline: drift.Value(deadline),
+        updatedAt: drift.Value(now),
+      ),
+      id,
+    );
+
+    if (success) {
+      await _logger.log(SecurityAction.settingsChanged, details: 'تعديل التوجيه: $title');
+    }
+
+    return success;
+  }
+
   /// Delete (soft)
   Future<void> deleteDirective(int id) async {
     await _db.directivesDao.softDelete(id);
     await _logger.logRecordDeleted('توجيه', id);
   }
+
+  /// Get directive by ID
+  Future<Directive?> getById(int id) => _db.directivesDao.getById(id);
 }
 
 /// Provider for DirectivesRepository

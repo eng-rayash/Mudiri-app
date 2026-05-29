@@ -13,6 +13,8 @@ import '../../../shared/widgets/priority_chip.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 import '../providers/tasks_provider.dart';
 import '../domain/tasks_repository.dart';
 
@@ -30,6 +32,27 @@ class _TasksListScreenState
   String _searchQuery = '';
   String _statusFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'تاريخ الاستحقاق (الأحدث)',
+      (a, b) => (b.dueDate ?? '').compareTo(a.dueDate ?? ''),
+    ),
+    SortOption(
+      'تاريخ الاستحقاق (الأقدم)',
+      (a, b) => (a.dueDate ?? '').compareTo(b.dueDate ?? ''),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'الأهمية (هام أولاً)',
+      (a, b) => b.priority.compareTo(a.priority),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -77,6 +100,12 @@ class _TasksListScreenState
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(Icons.add_rounded,
                       color: isDark
@@ -86,6 +115,7 @@ class _TasksListScreenState
                 ),
               ]
             : [
+
                 tasksState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -235,6 +265,8 @@ class _TasksListScreenState
                           (t.dueDate ?? '').contains(q);
                     }).toList();
                   }
+
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filtered.isEmpty) {
                     return Center(

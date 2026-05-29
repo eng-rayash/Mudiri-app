@@ -13,6 +13,8 @@ import '../../../shared/widgets/search_filter_bar.dart';
 import '../domain/appointments_repository.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 
 /// Screen displaying the list of appointments with search & filter.
 class AppointmentsListScreen extends ConsumerStatefulWidget {
@@ -27,6 +29,27 @@ class _AppointmentsListScreenState
     extends ConsumerState<AppointmentsListScreen> {
   String _searchQuery = '';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => '${b.date} ${b.time}'.compareTo('${a.date} ${a.time}'),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => '${a.date} ${a.time}'.compareTo('${b.date} ${b.time}'),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'الحالة',
+      (a, b) => a.status.compareTo(b.status),
+    ),
+  ];
+
 
   void _toggleSelection(int id) {
     setState(() {
@@ -68,8 +91,16 @@ class _AppointmentsListScreenState
             : Text('تم تحديد ${_selectedIds.length}',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
-            ? null
+            ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
+              ]
             : [
+
                 appointmentsAsync.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -193,6 +224,8 @@ class _AppointmentsListScreenState
                           a.time.contains(q);
                     }).toList();
                   }
+
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filtered.isEmpty) {
                     return Center(
@@ -365,6 +398,17 @@ class _AppointmentsListScreenState
                                   ],
                                 ),
                               ),
+                              if (_selectedIds.isEmpty) ...[
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => context.push(RouteNames.appointmentEditPath(appointment.id)),
+                                ),
+                              ],
                             ],
                           ),
                         ),

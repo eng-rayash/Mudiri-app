@@ -9,6 +9,8 @@ import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 import '../domain/notes_repository.dart';
 import '../../../core/database/app_database.dart';
 
@@ -23,6 +25,23 @@ class NotesScreen extends ConsumerStatefulWidget {
 class _NotesScreenState extends ConsumerState<NotesScreen> {
   String _searchQuery = '';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث أولاً',
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    ),
+    SortOption(
+      'الأقدم أولاً',
+      (a, b) => a.createdAt.compareTo(b.createdAt),
+    ),
+    SortOption(
+      'العنوان (أبجدي)',
+      (a, b) => (a.title ?? '').compareTo(b.title ?? ''),
+    ),
+  ];
+
 
   void _toggleSelection(int id) {
     setState(() {
@@ -240,6 +259,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
             ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
                 IconButton(
                   icon: Icon(Icons.add_box_rounded,
                       color: isDark
@@ -249,6 +274,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 ),
               ]
             : [
+
                 notesState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -365,6 +391,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                     }).toList();
                   }
 
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
+
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -448,19 +476,34 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                   overflow:
                                       TextOverflow.fade),
                             ),
-                            if (_selectedIds.isEmpty)
+                             if (_selectedIds.isEmpty)
                               Align(
                                 alignment: Alignment.centerLeft,
-                                child: IconButton(
-                                  icon: const Icon(
-                                      Icons
-                                          .delete_outline_rounded,
-                                      color: NeuColors.danger,
-                                      size: 20),
-                                  onPressed: () => _confirmDelete(context, note),
-                                  padding: EdgeInsets.zero,
-                                  constraints:
-                                      const BoxConstraints(),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit_rounded,
+                                        color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                        size: 18,
+                                      ),
+                                      onPressed: () => _showAddNoteDialog(context, ref, isDark, editNote: note),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                          Icons
+                                              .delete_outline_rounded,
+                                          color: NeuColors.danger,
+                                          size: 18),
+                                      onPressed: () => _confirmDelete(context, note),
+                                      padding: EdgeInsets.zero,
+                                      constraints:
+                                          const BoxConstraints(),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
@@ -478,16 +521,16 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 
   void _showAddNoteDialog(
-      BuildContext context, WidgetRef ref, bool isDark) {
-    final titleCtrl = TextEditingController();
-    final contentCtrl = TextEditingController();
+      BuildContext context, WidgetRef ref, bool isDark, {NoteItem? editNote}) {
+    final titleCtrl = TextEditingController(text: editNote?.title);
+    final contentCtrl = TextEditingController(text: editNote?.content);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor:
             isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
-        title: Text('ملاحظة جديدة',
+        title: Text(editNote != null ? 'تعديل الملاحظة' : 'ملاحظة جديدة',
             style: isDark
                 ? AppTypography.h3Dark
                 : AppTypography.h3),
@@ -513,13 +556,22 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               child: const Text('إلغاء')),
           NeuButton(
             label: 'حفظ',
-            onPressed: () {
+            onPressed: () async {
               if (contentCtrl.text.isNotEmpty) {
-                ref.read(notesRepositoryProvider).createNote(
-                      title: titleCtrl.text,
-                      content: contentCtrl.text,
-                    );
-                Navigator.pop(ctx);
+                final repo = ref.read(notesRepositoryProvider);
+                if (editNote != null) {
+                  await repo.updateNote(
+                    id: editNote.id,
+                    title: titleCtrl.text,
+                    content: contentCtrl.text,
+                  );
+                } else {
+                  await repo.createNote(
+                    title: titleCtrl.text,
+                    content: contentCtrl.text,
+                  );
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
               }
             },
           ),

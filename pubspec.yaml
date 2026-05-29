@@ -51,6 +51,8 @@ dependencies:
   printing: ^5.13.2
   hijri: ^3.0.0
   open_file: ^3.5.10
+  image_cropper: ^8.0.2
+  image: ^4.3.0
 
 dev_dependencies:
   flutter_test:

@@ -73,6 +73,49 @@ class ArchiveRepository {
     return id;
   }
 
+  /// Update an existing archive record.
+  Future<bool> updateArchiveRecord({
+    required int id,
+    required String title,
+    String? referenceNumber,
+    String? documentDate,
+    String? hijriDate,
+    String? directedEntity,
+    String? category,
+    String? localFilePath,
+    String? tags,
+    String? notes,
+    bool isConfidential = false,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final success = await _db.archiveDao.updateDocument(
+      ArchiveCompanion(
+        title: drift.Value(title),
+        referenceNumber: drift.Value(referenceNumber),
+        documentDate: drift.Value(documentDate),
+        hijriDate: drift.Value(hijriDate),
+        directedEntity: drift.Value(directedEntity),
+        category: drift.Value(category),
+        localFilePath: drift.Value(localFilePath),
+        tags: drift.Value(tags),
+        notes: drift.Value(notes),
+        isConfidential: drift.Value(isConfidential),
+        updatedAt: drift.Value(now),
+      ),
+      id,
+    );
+
+    if (success) {
+      await _logger.log(
+        SecurityAction.exportData,
+        details: 'تعديل وثيقة مؤرشفة: $title',
+      );
+    }
+
+    return success;
+  }
+
   /// Record access to confidential document
   Future<void> logConfidentialAccess(String title) async {
     await _logger.log(

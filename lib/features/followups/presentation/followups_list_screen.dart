@@ -13,6 +13,8 @@ import '../../../shared/widgets/priority_chip.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
 import '../domain/follow_ups_repository.dart';
 import '../providers/follow_ups_provider.dart';
 import '../../../core/database/app_database.dart';
@@ -31,6 +33,31 @@ class _FollowupsListScreenState extends ConsumerState<FollowupsListScreen> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => a.createdAt.compareTo(b.createdAt),
+    ),
+    SortOption(
+      'الموضوع (أبجدي)',
+      (a, b) => a.title.compareTo(b.title),
+    ),
+    SortOption(
+      'الأهمية (هام أولاً)',
+      (a, b) => a.priority.compareTo(b.priority),
+    ),
+    SortOption(
+      'الحالة',
+      (a, b) => a.status.compareTo(b.status),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -613,42 +640,53 @@ class _FollowupsListScreenState extends ConsumerState<FollowupsListScreen> {
               }).toList();
 
               if (_selectedIds.isEmpty) {
-                return ExportButton(
-                  itemCount: filteredDocs.length,
-                  onExport: (format) async {
-                    final exportService = ref.read(exportServiceProvider);
-                    await exportService.exportDataList<FollowUp>(
-                      context: context,
-                      title: 'متابعات الإدارة التنفيذية',
-                      items: filteredDocs,
-                      headers: [
-                        'م',
-                        'الموضوع',
-                        'النوع المرتبط',
-                        'الجهة المسؤولة',
-                        'تاريخ الاستحقاق',
-                        'الأولوية',
-                        'الحالة',
-                        'الملاحظات'
-                      ],
-                      itemMapper: (list) => List.generate(list.length, (idx) {
-                        final f = list[idx];
-                        return [
-                          '${idx + 1}',
-                          f.title,
-                          FollowUpEntityType.fromValue(f.entityType).arabicLabel,
-                          f.assignedTo ?? 'غير محدد',
-                          f.targetDate ?? 'غير محدد',
-                          Priority.fromValue(f.priority).arabicLabel,
-                          UnifiedStatus.fromValue(f.status).arabicLabel,
-                          f.notes ?? '',
-                        ];
-                      }),
-                      format: format,
-                    );
-                  },
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SortMenu(
+                      options: _sortOptions,
+                      selectedIndex: _selectedSortIndex,
+                      onSelected: (index) => setState(() => _selectedSortIndex = index),
+                    ),
+                    ExportButton(
+                      itemCount: filteredDocs.length,
+                      onExport: (format) async {
+                        final exportService = ref.read(exportServiceProvider);
+                        await exportService.exportDataList<FollowUp>(
+                          context: context,
+                          title: 'متابعات الإدارة التنفيذية',
+                          items: filteredDocs,
+                          headers: [
+                            'م',
+                            'الموضوع',
+                            'النوع المرتبط',
+                            'الجهة المسؤولة',
+                            'تاريخ الاستحقاق',
+                            'الأولوية',
+                            'الحالة',
+                            'الملاحظات'
+                          ],
+                          itemMapper: (list) => List.generate(list.length, (idx) {
+                            final f = list[idx];
+                            return [
+                              '${idx + 1}',
+                              f.title,
+                              FollowUpEntityType.fromValue(f.entityType).arabicLabel,
+                              f.assignedTo ?? 'غير محدد',
+                              f.targetDate ?? 'غير محدد',
+                              Priority.fromValue(f.priority).arabicLabel,
+                              UnifiedStatus.fromValue(f.status).arabicLabel,
+                              f.notes ?? '',
+                            ];
+                          }),
+                          format: format,
+                        );
+                      },
+                    ),
+                  ],
                 );
-              } else {
+              }
+ else {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -761,6 +799,8 @@ class _FollowupsListScreenState extends ConsumerState<FollowupsListScreen> {
                           (f.targetDate ?? '').contains(q);
                     }).toList();
                   }
+
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
 
                   if (filtered.isEmpty) {
                     return Center(

@@ -11,6 +11,9 @@ import '../../../shared/widgets/search_filter_bar.dart';
 import '../domain/visitors_repository.dart';
 import '../../../shared/widgets/export_button.dart';
 import '../../reports/domain/export_service.dart';
+import '../../../shared/widgets/sort_menu.dart';
+
+import '../../../core/database/app_database.dart';
 
 /// Visitors List Screen — with search, status filter, multi-select, and export.
 class VisitorsListScreen extends ConsumerStatefulWidget {
@@ -26,6 +29,27 @@ class _VisitorsListScreenState
   String _searchQuery = '';
   String _statusFilter = 'all';
   final Set<int> _selectedIds = {};
+  int _selectedSortIndex = 0;
+
+  static final List<SortOption> _sortOptions = [
+    SortOption(
+      'الأحدث تاريخاً',
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    ),
+    SortOption(
+      'الأقدم تاريخاً',
+      (a, b) => a.createdAt.compareTo(b.createdAt),
+    ),
+    SortOption(
+      'الاسم (أبجدي)',
+      (a, b) => a.visitorName.compareTo(b.visitorName),
+    ),
+    SortOption(
+      'الحالة',
+      (a, b) => a.status.compareTo(b.status),
+    ),
+  ];
+
 
   static const _filters = [
     FilterOption(label: 'الكل', value: 'all'),
@@ -70,8 +94,16 @@ class _VisitorsListScreenState
             : Text('تم تحديد ${_selectedIds.length}',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
-            ? null
+            ? [
+                SortMenu(
+                  options: _sortOptions,
+                  selectedIndex: _selectedSortIndex,
+                  onSelected: (index) =>
+                      setState(() => _selectedSortIndex = index),
+                ),
+              ]
             : [
+
                 visitorsState.when(
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
@@ -239,6 +271,8 @@ class _VisitorsListScreenState
                     }).toList();
                   }
 
+                  filtered.sort(_sortOptions[_selectedSortIndex].comparator);
+
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -316,35 +350,45 @@ class _VisitorsListScreenState
                           ),
                           trailing: _selectedIds.isNotEmpty
                               ? null
-                              : (visitor.status == 1
-                                  ? TextButton.icon(
-                                      icon: const Icon(
-                                          Icons
-                                              .exit_to_app_rounded,
-                                          color:
-                                              NeuColors.danger),
-                                      label: const Text(
-                                          'تسجيل خروج',
-                                          style: TextStyle(
-                                              color: NeuColors
-                                                  .danger)),
-                                      onPressed: () {
-                                        ref
-                                            .read(
-                                                visitorsRepositoryProvider)
-                                            .checkoutVisitor(
-                                                visitor.id,
-                                                visitor
-                                                    .visitorName);
-                                      },
-                                    )
-                                  : Text('بالانتظار',
-                                      style: TextStyle(
-                                          color: isDark
-                                              ? NeuColors
-                                                  .goldAccent
-                                              : NeuColors
-                                                  .warning))),
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit_rounded,
+                                        color: isDark ? NeuColors.goldAccent : NeuColors.navyMid,
+                                        size: 20,
+                                      ),
+                                      onPressed: () => _showAddVisitorDialog(context, ref, isDark, editVisitor: visitor),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    visitor.status == 1
+                                        ? TextButton.icon(
+                                            icon: const Icon(
+                                                Icons.exit_to_app_rounded,
+                                                color: NeuColors.danger,
+                                                size: 18),
+                                            label: const Text(
+                                                'خروج',
+                                                style: TextStyle(
+                                                    color: NeuColors.danger,
+                                                    fontSize: 12)),
+                                            onPressed: () {
+                                              ref
+                                                  .read(visitorsRepositoryProvider)
+                                                  .checkoutVisitor(
+                                                      visitor.id,
+                                                      visitor.visitorName);
+                                            },
+                                          )
+                                        : Text('بالانتظار',
+                                            style: TextStyle(
+                                                color: isDark
+                                                    ? NeuColors.goldAccent
+                                                    : NeuColors.warning,
+                                                fontSize: 12)),
+                                  ],
+                                ),
                         ),
                       );
                     },
@@ -359,10 +403,10 @@ class _VisitorsListScreenState
   }
 
   void _showAddVisitorDialog(
-      BuildContext context, WidgetRef ref, bool isDark) {
-    final nameCtrl = TextEditingController();
-    final companyCtrl = TextEditingController();
-    final purposeCtrl = TextEditingController();
+      BuildContext context, WidgetRef ref, bool isDark, {VisitorItem? editVisitor}) {
+    final nameCtrl = TextEditingController(text: editVisitor?.visitorName);
+    final companyCtrl = TextEditingController(text: editVisitor?.company);
+    final purposeCtrl = TextEditingController(text: editVisitor?.purpose);
 
     showDialog(
       context: context,
@@ -378,7 +422,7 @@ class _VisitorsListScreenState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'تسجيل دخول زائر جديد',
+                    editVisitor != null ? 'تعديل بيانات الزائر' : 'تسجيل دخول زائر جديد',
                     style: isDark ? AppTypography.h3Dark : AppTypography.h3,
                     textAlign: TextAlign.center,
                   ),
@@ -408,7 +452,7 @@ class _VisitorsListScreenState
                     children: [
                       Expanded(
                         child: NeuButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (nameCtrl.text.trim().isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -418,14 +462,24 @@ class _VisitorsListScreenState
                               );
                               return;
                             }
-                            ref.read(visitorsRepositoryProvider).registerVisitor(
-                                  visitorName: nameCtrl.text.trim(),
-                                  company: companyCtrl.text.trim(),
-                                  purpose: purposeCtrl.text.trim(),
-                                );
-                            Navigator.pop(ctx);
+                            final repo = ref.read(visitorsRepositoryProvider);
+                            if (editVisitor != null) {
+                              await repo.updateVisitor(
+                                id: editVisitor.id,
+                                visitorName: nameCtrl.text.trim(),
+                                company: companyCtrl.text.trim(),
+                                purpose: purposeCtrl.text.trim(),
+                              );
+                            } else {
+                              await repo.registerVisitor(
+                                visitorName: nameCtrl.text.trim(),
+                                company: companyCtrl.text.trim(),
+                                purpose: purposeCtrl.text.trim(),
+                              );
+                            }
+                            if (ctx.mounted) Navigator.pop(ctx);
                           },
-                          label: 'تسجيل الدخول',
+                          label: editVisitor != null ? 'حفظ التعديلات' : 'تسجيل الدخول',
                           icon: Icons.check_rounded,
                         ),
                       ),

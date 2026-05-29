@@ -36,6 +36,23 @@ class NotesRepository {
     await _logger.log(SecurityAction.settingsChanged, details: 'تم إنشاء ملاحظة جديدة: ${title ?? "بدون عنوان"}');
   }
 
+  Future<bool> updateNote({
+    required int id,
+    String? title,
+    required String content,
+    String? colorCode,
+    String? tags,
+  }) async {
+    final companion = NotesCompanion(
+      title: Value(title),
+      content: Value(content),
+      colorCode: Value(colorCode),
+      tags: Value(tags),
+      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+    );
+    return await _dao.updateNote(companion, id);
+  }
+
   Future<void> deleteNote(int id) async {
     await _dao.deleteNoteSoft(id);
     await _logger.logRecordDeleted('ملاحظة', id);

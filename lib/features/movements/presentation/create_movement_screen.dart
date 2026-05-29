@@ -16,7 +16,9 @@ import '../../../shared/widgets/neu_input.dart';
 ///
 /// Allows the executive to log an outbound movement/dispatch.
 class CreateMovementScreen extends ConsumerStatefulWidget {
-  const CreateMovementScreen({super.key});
+  const CreateMovementScreen({super.key, this.movementId});
+
+  final int? movementId;
 
   @override
   ConsumerState<CreateMovementScreen> createState() =>
@@ -37,6 +39,42 @@ class _CreateMovementScreenState
   bool _isSaving = false;
 
   static const List<String> _types = ['خروج', 'عودة', 'مهمة خارجية'];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.movementId != null) {
+      _loadMovement();
+    }
+  }
+
+  Future<void> _loadMovement() async {
+    setState(() => _isSaving = true);
+    try {
+      final repository = ref.read(movementsRepositoryProvider);
+      final movement = await repository.getById(widget.movementId!);
+      if (movement != null) {
+        setState(() {
+          _destinationCtrl.text = movement.destination;
+          _purposeCtrl.text = movement.purpose ?? '';
+          _notesCtrl.text = movement.notes ?? '';
+          _movementType = movement.type;
+          _selectedDate = DateTime.tryParse(movement.date) ?? DateTime.now();
+          final parts = movement.time.split(':');
+          if (parts.length >= 2) {
+            _selectedTime = TimeOfDay(
+              hour: int.tryParse(parts[0]) ?? 12,
+              minute: int.tryParse(parts[1]) ?? 0,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading movement: $e');
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -74,20 +112,32 @@ class _CreateMovementScreenState
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
       final timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
-      await repository.createMovement(
-        destination: _destinationCtrl.text,
-        purpose: _purposeCtrl.text.isNotEmpty ? _purposeCtrl.text : null,
-        date: dateStr,
-        time: timeStr,
-        type: _movementType,
-        notes: _notesCtrl.text.isNotEmpty ? _notesCtrl.text : null,
-      );
+      if (widget.movementId != null) {
+        await repository.updateMovement(
+          id: widget.movementId!,
+          destination: _destinationCtrl.text,
+          purpose: _purposeCtrl.text.isNotEmpty ? _purposeCtrl.text : null,
+          date: dateStr,
+          time: timeStr,
+          type: _movementType,
+          notes: _notesCtrl.text.isNotEmpty ? _notesCtrl.text : null,
+        );
+      } else {
+        await repository.createMovement(
+          destination: _destinationCtrl.text,
+          purpose: _purposeCtrl.text.isNotEmpty ? _purposeCtrl.text : null,
+          date: dateStr,
+          time: timeStr,
+          type: _movementType,
+          notes: _notesCtrl.text.isNotEmpty ? _notesCtrl.text : null,
+        );
+      }
 
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تسجيل التحرك بنجاح'),
+          SnackBar(
+            content: Text(widget.movementId != null ? 'تم تعديل التحرك بنجاح' : 'تم تسجيل التحرك بنجاح'),
             backgroundColor: NeuColors.success,
           ),
         );
@@ -122,7 +172,7 @@ class _CreateMovementScreenState
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'تسجيل تحرك',
+          widget.movementId != null ? 'تعديل تحرك' : 'تسجيل تحرك',
           style: isDark ? AppTypography.h3Dark : AppTypography.h3,
         ),
         leading: IconButton(
@@ -302,7 +352,7 @@ class _CreateMovementScreenState
 
               // Save Button
               NeuButton(
-                label: _isSaving ? 'جارٍ الحفظ...' : 'حفظ التحرك',
+                label: _isSaving ? 'جارٍ الحفظ...' : (widget.movementId != null ? 'حفظ التعديلات' : 'حفظ التحرك'),
                 icon: _isSaving
                     ? null
                     : Icons.save_rounded,

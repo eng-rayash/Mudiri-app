@@ -56,11 +56,48 @@ class ContactsRepository {
     return id;
   }
 
+  /// Update contact
+  Future<bool> updateContact({
+    required int id,
+    required String name,
+    String? position,
+    String? company,
+    String? phoneNumber,
+    String? email,
+    bool isVip = false,
+    String? notes,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    final success = await _db.contactsDao.updateContact(
+      ContactsCompanion(
+        name: drift.Value(name),
+        position: drift.Value(position),
+        company: drift.Value(company),
+        phoneNumber: drift.Value(phoneNumber),
+        email: drift.Value(email),
+        isVip: drift.Value(isVip),
+        notes: drift.Value(notes),
+        updatedAt: drift.Value(now),
+      ),
+      id,
+    );
+
+    if (success && isVip) {
+      await _logger.log(SecurityAction.settingsChanged, details: 'تعديل جهة اتصال VIP: $name');
+    }
+
+    return success;
+  }
+
   /// Delete (soft)
   Future<void> deleteContact(int id) async {
     await _db.contactsDao.softDelete(id);
     await _logger.logRecordDeleted('جهة اتصال', id);
   }
+
+  /// Get contact by ID
+  Future<Contact?> getById(int id) => _db.contactsDao.getById(id);
 }
 
 /// Provider for ContactsRepository

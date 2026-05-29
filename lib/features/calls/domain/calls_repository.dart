@@ -50,6 +50,29 @@ class CallsRepository {
 
   Stream<List<CallItem>> watchAllCalls() => _dao.watchAllCalls();
 
+  Future<bool> updateCall({
+    required int id,
+    required String callerName,
+    required int callType,
+    required String date,
+    required String time,
+    String? phoneNumber,
+    String? summary,
+    bool isImportant = false,
+  }) async {
+    final companion = CallsCompanion(
+      callerName: Value(callerName),
+      callType: Value(callType),
+      date: Value(date),
+      time: Value(time),
+      phoneNumber: Value(phoneNumber),
+      summary: Value(summary),
+      isImportant: Value(isImportant),
+      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+    );
+    return await _dao.updateCall(companion, id);
+  }
+
   Future<void> deleteCall(int id) async {
     await _dao.softDelete(id);
     await _logger.logRecordDeleted('مكالمة', id);

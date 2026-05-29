@@ -13,16 +13,63 @@ import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/dashboard_fab.dart';
+import '../../notifications/domain/notification_service.dart';
+import '../../../core/security/secure_storage_service.dart';
 
 /// Dashboard Screen — executive command center.
 ///
 /// Displays: Today's summary, upcoming meetings, stats overview.
 /// Quick-add actions are accessible via the center FAB.
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowGreeting();
+    });
+  }
+
+  Future<void> _checkAndShowGreeting() async {
+    try {
+      final storage = SecureStorageService.instance;
+      final notificationsVal = await storage.read('notifications_enabled');
+      if (notificationsVal == 'false') return;
+      if (!mounted) return;
+
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final lastShown = await storage.read('last_greeting_shown_date');
+      if (lastShown == todayStr) return; // Already shown today
+      if (!mounted) return;
+
+      // Get today's stats
+      final analytics = ref.read(reportsAnalyticsProvider);
+      final todayMeetings = ref.read(todayMeetingsProvider).valueOrNull?.length ?? 0;
+      
+      // Trigger notification
+      final notificationService = ref.read(notificationServiceProvider);
+      await notificationService.showNotification(
+        id: 999,
+        title: 'صباح الخير سعادة المدير! ☀️',
+        body: 'لديك اليوم $todayMeetings اجتماعات، و ${analytics.totalTasks} مهام، و ${analytics.upcomingAppointments} مواعيد قادمة.',
+      );
+
+      // Save that we showed it today
+      if (!mounted) return;
+      await storage.write('last_greeting_shown_date', todayStr);
+    } catch (e) {
+      debugPrint('Error triggering daily greeting: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
     final dateStr = DateFormat('EEEE، d MMMM yyyy', 'ar').format(now);

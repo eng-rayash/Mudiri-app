@@ -14,7 +14,9 @@ import '../../domain/directives_repository.dart';
 
 /// Create Directive Page — form for issuing a new executive directive.
 class CreateDirectivePage extends ConsumerStatefulWidget {
-  const CreateDirectivePage({super.key});
+  const CreateDirectivePage({super.key, this.directiveId});
+
+  final int? directiveId;
 
   @override
   ConsumerState<CreateDirectivePage> createState() =>
@@ -31,6 +33,41 @@ class _CreateDirectivePageState
   Priority _priority = Priority.medium;
   DateTime? _deadline;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.directiveId != null) {
+      _loadDirective();
+    }
+  }
+
+  Future<void> _loadDirective() async {
+    setState(() => _isLoading = true);
+    try {
+      final repository = ref.read(directivesRepositoryProvider);
+      final directive = await repository.getById(widget.directiveId!);
+      if (directive != null) {
+        setState(() {
+          _titleCtrl.text = directive.title;
+          _detailsCtrl.text = directive.details ?? '';
+          _sourceCtrl.text = directive.source ?? '';
+          _assignedCtrl.text = directive.assignedTo ?? '';
+          _priority = Priority.values.firstWhere(
+            (p) => p.value == directive.priority,
+            orElse: () => Priority.medium,
+          );
+          if (directive.deadline != null) {
+            _deadline = DateTime.tryParse(directive.deadline!);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading directive: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -60,32 +97,52 @@ class _CreateDirectivePageState
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(directivesRepositoryProvider).createDirective(
-            title: _titleCtrl.text.trim(),
-            details: _detailsCtrl.text.trim().isEmpty
-                ? null
-                : _detailsCtrl.text.trim(),
-            source: _sourceCtrl.text.trim().isEmpty
-                ? null
-                : _sourceCtrl.text.trim(),
-            assignedTo: _assignedCtrl.text.trim().isEmpty
-                ? null
-                : _assignedCtrl.text.trim(),
-            priority: _priority,
-            deadline: _deadline != null
-                ? DateFormat('yyyy-MM-dd').format(_deadline!)
-                : null,
-          );
+      if (widget.directiveId != null) {
+        await ref.read(directivesRepositoryProvider).updateDirective(
+              id: widget.directiveId!,
+              title: _titleCtrl.text.trim(),
+              details: _detailsCtrl.text.trim().isEmpty
+                  ? null
+                  : _detailsCtrl.text.trim(),
+              source: _sourceCtrl.text.trim().isEmpty
+                  ? null
+                  : _sourceCtrl.text.trim(),
+              assignedTo: _assignedCtrl.text.trim().isEmpty
+                  ? null
+                  : _assignedCtrl.text.trim(),
+              priority: _priority,
+              deadline: _deadline != null
+                  ? DateFormat('yyyy-MM-dd').format(_deadline!)
+                  : null,
+            );
+      } else {
+        await ref.read(directivesRepositoryProvider).createDirective(
+              title: _titleCtrl.text.trim(),
+              details: _detailsCtrl.text.trim().isEmpty
+                  ? null
+                  : _detailsCtrl.text.trim(),
+              source: _sourceCtrl.text.trim().isEmpty
+                  ? null
+                  : _sourceCtrl.text.trim(),
+              assignedTo: _assignedCtrl.text.trim().isEmpty
+                  ? null
+                  : _assignedCtrl.text.trim(),
+              priority: _priority,
+              deadline: _deadline != null
+                  ? DateFormat('yyyy-MM-dd').format(_deadline!)
+                  : null,
+            );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle_rounded,
+                const Icon(Icons.check_circle_rounded,
                     color: Colors.white),
-                SizedBox(width: 12),
-                Text('تم إصدار التوجيه بنجاح'),
+                const SizedBox(width: 12),
+                Text(widget.directiveId != null ? 'تم تعديل التوجيه بنجاح' : 'تم إصدار التوجيه بنجاح'),
               ],
             ),
             backgroundColor: NeuColors.success,
@@ -123,7 +180,7 @@ class _CreateDirectivePageState
             isDark ? NeuColors.bgColorDark : NeuColors.bgColor,
         elevation: 0,
         title: Text(
-          'إصدار توجيه جديد',
+          widget.directiveId != null ? 'تعديل التوجيه' : 'إصدار توجيه جديد',
           style: isDark ? AppTypography.h3Dark : AppTypography.h3,
         ),
         centerTitle: true,
@@ -288,7 +345,7 @@ class _CreateDirectivePageState
 
                 // Submit
                 NeuButton(
-                  label: 'إصدار التوجيه',
+                  label: widget.directiveId != null ? 'حفظ التعديلات' : 'إصدار التوجيه',
                   onPressed: _isLoading ? null : _submit,
                   isLoading: _isLoading,
                   icon: Icons.send_rounded,

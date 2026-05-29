@@ -53,6 +53,32 @@ class AppointmentsRepository {
     return id;
   }
 
+  /// Update appointment
+  Future<bool> updateAppointment({
+    required int id,
+    required String title,
+    required DateTime date,
+    required String time,
+    int? contactId,
+    int durationMinutes = 30,
+    String? location,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    return await _db.appointmentsDao.updateAppointment(
+      AppointmentsCompanion(
+        title: drift.Value(title),
+        date: drift.Value(date.toIso8601String().split('T').first),
+        time: drift.Value(time),
+        durationMinutes: drift.Value(durationMinutes),
+        contactId: drift.Value(contactId),
+        location: drift.Value(location),
+        updatedAt: drift.Value(now),
+      ),
+      id,
+    );
+  }
+
   /// Update status
   Future<void> updateStatus(int id, UnifiedStatus status) async {
     await _db.appointmentsDao.updateStatus(id, status.value);

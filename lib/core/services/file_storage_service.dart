@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
@@ -98,10 +99,64 @@ class FileStorageService {
       final archiveDir = await getArchiveDirectory();
       final targetPath = path.join(archiveDir.path, filename);
       final savedFile = await sourceFile.copy(targetPath);
+      
+      // Also copy to public folder for user visibility
+      await saveToPublicFolder(savedFile, filename, isArchive: true);
+      
       return savedFile.path;
     } catch (e) {
       throw Exception('خطأ في حفظ الملف: $e');
     }
+  }
+
+  /// Save a copy of the file to a public folder on the device for easy user access.
+  /// Handles Android public directories (Downloads/Documents) and desktop downlods.
+  Future<String?> saveToPublicFolder(File file, String filename, {bool isArchive = false}) async {
+    try {
+      Directory? publicDir;
+      if (Platform.isAndroid) {
+        // Try multiple paths to ensure reliability on different Android flavors
+        final List<String> possiblePaths = [
+          '/storage/emulated/0/Documents/Mudiri/${isArchive ? 'Archive' : 'Exports'}',
+          '/storage/emulated/0/Download/Mudiri/${isArchive ? 'Archive' : 'Exports'}',
+          '/storage/emulated/0/Mudiri/${isArchive ? 'Archive' : 'Exports'}',
+        ];
+
+        for (final pStr in possiblePaths) {
+          try {
+            final dir = Directory(pStr);
+            if (!await dir.exists()) {
+              await dir.create(recursive: true);
+            }
+            if (await dir.exists()) {
+              publicDir = dir;
+              break;
+            }
+          } catch (_) {
+            // Try next path
+          }
+        }
+      } else {
+        // Fallback for Windows, macOS, etc.
+        final downloads = await getDownloadsDirectory();
+        if (downloads != null) {
+          publicDir = Directory(path.join(downloads.path, 'Mudiri', isArchive ? 'Archive' : 'Exports'));
+          if (!await publicDir.exists()) {
+            await publicDir.create(recursive: true);
+          }
+        }
+      }
+
+      if (publicDir != null) {
+        final targetPath = path.join(publicDir.path, filename);
+        final savedFile = await file.copy(targetPath);
+        return savedFile.path;
+      }
+    } catch (e) {
+      // Fail silently or log to avoid breaking the core flow if OS permissions block public storage
+      debugPrint('Error saving to public folder: $e');
+    }
+    return null;
   }
 
   /// Retrieve a file from the archive by its full path
