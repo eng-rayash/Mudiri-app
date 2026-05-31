@@ -293,27 +293,8 @@ class _FabMenuSheetState extends State<_FabMenuSheet>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: NeuColors.navyDeep.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: NeuColors.goldAccent,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'إضافة جديد',
-                    style: isDark
-                        ? AppTypography.h4Dark
-                        : AppTypography.h4,
-                  ),
-                  const Spacer(),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(

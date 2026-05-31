@@ -15,14 +15,14 @@ enum DocumentFilter {
   /// Grayscale — converts to black & white tones
   grayscale,
 
-  /// High contrast B&W — sharp document look (like CamScanner)
-  documentBW,
+  /// Fidelity Color — optimized contrast color balance
+  fidelityColor,
 
-  /// Enhanced color — brighter background, sharper text
-  enhancedColor,
+  /// Magic Vivid — enhanced white balance, high vibrancy
+  magicVivid,
 
-  /// Magic color — auto-levels with vibrant colors preserved
-  magicColor,
+  /// Crisp B&W — pure white background, pure black text
+  crispBW,
 }
 
 /// Extension to provide Arabic labels and icons for each filter.
@@ -33,12 +33,12 @@ extension DocumentFilterExtension on DocumentFilter {
         return 'الأصلي';
       case DocumentFilter.grayscale:
         return 'رمادي';
-      case DocumentFilter.documentBW:
-        return 'أبيض وأسود';
-      case DocumentFilter.enhancedColor:
-        return 'محسّن';
-      case DocumentFilter.magicColor:
-        return 'ألوان ذكية';
+      case DocumentFilter.fidelityColor:
+        return 'مستند ملون واضح (Fidelity Color)';
+      case DocumentFilter.magicVivid:
+        return 'ألوان سحرية فائقة الوضوح (Magic Vivid)';
+      case DocumentFilter.crispBW:
+        return 'مستند نصي ناصع (Crisp B&W)';
     }
   }
 
@@ -48,12 +48,12 @@ extension DocumentFilterExtension on DocumentFilter {
         return Icons.image_rounded;
       case DocumentFilter.grayscale:
         return Icons.filter_b_and_w_rounded;
-      case DocumentFilter.documentBW:
-        return Icons.contrast_rounded;
-      case DocumentFilter.enhancedColor:
+      case DocumentFilter.fidelityColor:
         return Icons.auto_fix_high_rounded;
-      case DocumentFilter.magicColor:
+      case DocumentFilter.magicVivid:
         return Icons.auto_awesome_rounded;
+      case DocumentFilter.crispBW:
+        return Icons.contrast_rounded;
     }
   }
 }
@@ -158,7 +158,7 @@ class DocumentScannerService {
   }
 
   /// Apply a document enhancement filter to an image file. Runs inside an Isolate.
-  Future<File?> applyFilter(File imageFile, DocumentFilter filter) async {
+  Future<File?> applyFilter(File imageFile, DocumentFilter filter, [double intensity = 1.0]) async {
     if (filter == DocumentFilter.original) return imageFile;
 
     try {
@@ -176,17 +176,21 @@ class DocumentScannerService {
           case DocumentFilter.grayscale:
             processed = _applyGrayscale(original);
             break;
-          case DocumentFilter.documentBW:
-            processed = _applyDocumentBW(original);
+          case DocumentFilter.fidelityColor:
+            processed = _applyFidelityColor(original);
             break;
-          case DocumentFilter.enhancedColor:
-            processed = _applyEnhancedColor(original);
+          case DocumentFilter.magicVivid:
+            processed = _applyMagicVivid(original);
             break;
-          case DocumentFilter.magicColor:
-            processed = _applyMagicColor(original);
+          case DocumentFilter.crispBW:
+            processed = _applyCrispBW(original);
             break;
           default:
             processed = original;
+        }
+
+        if (intensity < 1.0 && filter != DocumentFilter.original) {
+          processed = _blendImages(original, processed, intensity);
         }
 
         final encoded = img.encodeJpg(processed, quality: 90);
@@ -266,8 +270,8 @@ class DocumentScannerService {
           }
         }
 
-        // If high gradient found, accept it as corner
-        if (maxGrad > 200.0) {
+        // If gradient is above noise threshold, accept it as corner
+        if (maxGrad > 20.0) {
           final t = maxIdx / steps;
           return Offset(
             (startX + dx * t) / targetW,
@@ -348,7 +352,7 @@ class DocumentScannerService {
             final double sy = (1 - dx) * (1 - dy) * y0 +
                               dx * (1 - dy) * y1 +
                               (1 - dx) * dy * y3 +
-                              dx * dy * x2;
+                              dx * dy * y2;
             _bilinearPixel(src, dst, u, v, sx, sy);
           }
         }
@@ -497,35 +501,18 @@ class DocumentScannerService {
     }
   }
 
-  static img.Image _applyDocumentBW(img.Image source) {
-    try {
-      var result = img.grayscale(source);
-      result = img.normalize(result, min: 0, max: 255);
-      result = img.adjustColor(result, contrast: 1.6);
-      result = img.adjustColor(result, brightness: 1.15);
-      result = img.convolution(result, filter: [
-        -0.5, -1, -0.5,
-        -1, 7, -1,
-        -0.5, -1, -0.5,
-      ]);
-      return result;
-    } catch (_) {
-      try { return img.grayscale(source); } catch (_) { return source; }
-    }
-  }
-
-  static img.Image _applyEnhancedColor(img.Image source) {
+  static img.Image _applyFidelityColor(img.Image source) {
     try {
       var result = img.adjustColor(
         source,
-        contrast: 1.3,
-        brightness: 1.1,
-        saturation: 1.1,
+        contrast: 1.25,
+        brightness: 1.05,
+        saturation: 1.05,
       );
       result = img.convolution(result, filter: [
-        0, -0.5, 0,
-        -0.5, 3, -0.5,
-        0, -0.5, 0,
+        0, -0.2, 0,
+        -0.2, 1.8, -0.2,
+        0, -0.2, 0,
       ]);
       return result;
     } catch (_) {
@@ -533,23 +520,69 @@ class DocumentScannerService {
     }
   }
 
-  static img.Image _applyMagicColor(img.Image source) {
+  static img.Image _applyMagicVivid(img.Image source) {
     try {
-      var result = img.normalize(source, min: 10, max: 245);
+      var result = img.normalize(source, min: 5, max: 250);
       result = img.adjustColor(
         result,
-        contrast: 1.4,
-        brightness: 1.08,
-        saturation: 1.25,
+        contrast: 1.45,
+        brightness: 1.12,
+        saturation: 1.35,
       );
       result = img.convolution(result, filter: [
-        0, -0.3, 0,
-        -0.3, 2.2, -0.3,
-        0, -0.3, 0,
+        -0.1, -0.2, -0.1,
+        -0.2, 2.2, -0.2,
+        -0.1, -0.2, -0.1,
       ]);
       return result;
     } catch (_) {
       return source;
     }
+  }
+
+  static img.Image _applyCrispBW(img.Image source) {
+    try {
+      var result = img.grayscale(source);
+      result = img.normalize(result, min: 0, max: 255);
+      result = img.adjustColor(result, contrast: 2.2, brightness: 1.2);
+      
+      final w = result.width;
+      final height = result.height;
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < w; x++) {
+          final p = result.getPixel(x, y);
+          final luma = p.r; 
+          final binaryVal = luma > 140 ? 255 : 0;
+          result.setPixelRgba(x, y, binaryVal, binaryVal, binaryVal, p.a.round());
+        }
+      }
+      return result;
+    } catch (_) {
+      try {
+        return img.grayscale(source);
+      } catch (_) {
+        return source;
+      }
+    }
+  }
+
+  static img.Image _blendImages(img.Image original, img.Image processed, double intensity) {
+    final blended = img.Image.from(processed);
+    final w = processed.width;
+    final h = processed.height;
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        final pOrig = original.getPixel(x, y);
+        final pProc = processed.getPixel(x, y);
+
+        final r = (pOrig.r + (pProc.r - pOrig.r) * intensity).round().clamp(0, 255);
+        final g = (pOrig.g + (pProc.g - pOrig.g) * intensity).round().clamp(0, 255);
+        final b = (pOrig.b + (pProc.b - pOrig.b) * intensity).round().clamp(0, 255);
+        final a = (pOrig.a + (pProc.a - pOrig.a) * intensity).round().clamp(0, 255);
+
+        blended.setPixelRgba(x, y, r, g, b, a);
+      }
+    }
+    return blended;
   }
 }

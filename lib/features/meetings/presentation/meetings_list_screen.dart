@@ -79,6 +79,7 @@ class _MeetingsListScreenState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final meetingsAsync = ref.watch(meetingsListProvider);
+    final filterParam = GoRouterState.of(context).uri.queryParameters['filter'];
 
     return Scaffold(
       backgroundColor:
@@ -95,7 +96,7 @@ class _MeetingsListScreenState
                   loading: () => _buildNormalHeader(isDark),
                   error: (_, _) => _buildNormalHeader(isDark),
                   data: (meetings) {
-                    var filtered = _applyFilters(meetings);
+                    var filtered = _applyFilters(meetings, filterParam);
                     if (_selectedIds.isNotEmpty) {
                       return Row(
                         children: [
@@ -254,7 +255,7 @@ class _MeetingsListScreenState
                           style: AppTypography.bodySmall
                               .copyWith(color: NeuColors.danger))),
                   data: (meetings) {
-                    var filtered = _applyFilters(meetings);
+                    var filtered = _applyFilters(meetings, filterParam);
 
                     if (filtered.isEmpty) {
                       return Center(
@@ -475,32 +476,18 @@ class _MeetingsListScreenState
           selectedIndex: _selectedSortIndex,
           onSelected: (index) => setState(() => _selectedSortIndex = index),
         ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () =>
-              context.push(RouteNames.meetingCreate),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? NeuColors.surfaceDark
-                  : NeuColors.surface,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.add_rounded,
-                color: isDark
-                    ? NeuColors.goldAccent
-                    : NeuColors.navyDeep,
-                size: 22),
-          ),
-        ),
       ],
     );
   }
 
 
-  List<Meeting> _applyFilters(List<Meeting> meetings) {
+  List<Meeting> _applyFilters(List<Meeting> meetings, String? filterParam) {
     var filtered = meetings;
+
+    if (filterParam == 'today') {
+      final todayStr = DateTime.now().toIso8601String().split('T').first;
+      filtered = filtered.where((m) => m.date == todayStr).toList();
+    }
 
     // Status filter
     if (_statusFilter != 'all') {

@@ -186,33 +186,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppSpacing.gapLg,
                         Row(
                           children: [
-                            _buildSummaryItem(
-                              Icons.groups_rounded,
-                              '${ref.watch(todayMeetingsProvider).valueOrNull?.length ?? 0}',
-                              'اجتماعات',
-                              isDark,
-                              NeuColors.info,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => context.push('${RouteNames.meetingsListFull}?filter=today'),
+                                child: _buildSummaryItem(
+                                  Icons.groups_rounded,
+                                  '${ref.watch(todayMeetingsProvider).valueOrNull?.length ?? 0}',
+                                  'اجتماعات',
+                                  isDark,
+                                  NeuColors.info,
+                                ),
+                              ),
                             ),
-                            _buildSummaryItem(
-                              Icons.task_alt_rounded,
-                              '${analytics.totalTasks}',
-                              'مهام عمل',
-                              isDark,
-                              NeuColors.success,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => context.push('${RouteNames.tasksListFull}?status=all'),
+                                child: _buildSummaryItem(
+                                  Icons.task_alt_rounded,
+                                  '${analytics.totalTasks}',
+                                  'مهام عمل',
+                                  isDark,
+                                  NeuColors.success,
+                                ),
+                              ),
                             ),
-                            _buildSummaryItem(
-                              Icons.campaign_rounded,
-                              '${analytics.criticalDirectives}',
-                              'توجيهات عاجلة',
-                              isDark,
-                              NeuColors.danger,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => context.push('${RouteNames.directivesList}?filter=critical'),
+                                child: _buildSummaryItem(
+                                  Icons.campaign_rounded,
+                                  '${analytics.criticalDirectives}',
+                                  'توجيهات عاجلة',
+                                  isDark,
+                                  NeuColors.danger,
+                                ),
+                              ),
                             ),
-                            _buildSummaryItem(
-                              Icons.event_rounded,
-                              '${analytics.upcomingAppointments}',
-                              'مواعيد هامة',
-                              isDark,
-                              NeuColors.warning,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => context.push('${RouteNames.appointmentsList}?filter=today'),
+                                child: _buildSummaryItem(
+                                  Icons.event_rounded,
+                                  '${analytics.upcomingAppointments}',
+                                  'مواعيد هامة',
+                                  isDark,
+                                  NeuColors.warning,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -470,42 +490,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
 
-              // Stats Row (Meetings, Completion rate, critical directives)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          '${ref.watch(meetingsListProvider).valueOrNull?.length ?? 0}',
-                          'إجمالي الاجتماعات',
-                          NeuColors.info,
-                          isDark,
-                        ),
-                      ),
-                      AppSpacing.gapHMd,
-                      Expanded(
-                        child: _buildStatCard(
-                          '${(analytics.taskCompletionRate * 100).toInt()}%',
-                          'نسبة إنجاز المهام',
-                          NeuColors.success,
-                          isDark,
-                        ),
-                      ),
-                      AppSpacing.gapHMd,
-                      Expanded(
-                        child: _buildStatCard(
-                          '${analytics.criticalDirectives}',
-                          'التوجيهات الهامة',
-                          NeuColors.danger,
-                          isDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+
 
               // Extra padding at bottom for FAB clearance
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -518,57 +503,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   static Widget _buildSummaryItem(
       IconData icon, String count, String label, bool isDark, Color highlightColor) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: highlightColor, size: 24),
-          AppSpacing.gapXs,
-          Text(
-            count,
-            style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+    return Column(
+      children: [
+        Icon(icon, color: highlightColor, size: 24),
+        AppSpacing.gapXs,
+        Text(
+          count,
+          style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+            fontWeight: FontWeight.bold,
           ),
-          Text(
-            label,
-            style: isDark
-                ? AppTypography.captionDark.copyWith(fontSize: 11)
-                : AppTypography.caption.copyWith(fontSize: 11),
-          ),
-        ],
-      ),
+        ),
+        Text(
+          label,
+          style: isDark
+              ? AppTypography.captionDark.copyWith(fontSize: 11)
+              : AppTypography.caption.copyWith(fontSize: 11),
+        ),
+      ],
     );
   }
 
-  static Widget _buildStatCard(
-      String value, String label, Color color, bool isDark) {
-    return NeuCard(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      radius: 20,
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: (isDark ? AppTypography.statNumberDark : AppTypography.statNumber).copyWith(
-              color: color,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          AppSpacing.gapXs,
-          Text(
-            label,
-            style: (isDark
-                    ? AppTypography.statLabel.copyWith(color: NeuColors.textSecondaryDark)
-                    : AppTypography.statLabel)
-                .copyWith(fontSize: 10),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Task distribution fl_chart section
@@ -695,13 +649,13 @@ class TaskDistributionChart extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildLegendItem('مكتملة', completed, NeuColors.success, isDark),
+                      _buildLegendItem(context, 'مكتملة', completed, NeuColors.success, isDark, () => context.push('${RouteNames.tasksListFull}?status=3')),
                       AppSpacing.gapSm,
-                      _buildLegendItem('قيد التنفيذ', inProgress, NeuColors.warning, isDark),
+                      _buildLegendItem(context, 'قيد التنفيذ', inProgress, NeuColors.warning, isDark, () => context.push('${RouteNames.tasksListFull}?status=1')),
                       AppSpacing.gapSm,
-                      _buildLegendItem('متأخرة', overdue, NeuColors.danger, isDark),
+                      _buildLegendItem(context, 'متأخرة', overdue, NeuColors.danger, isDark, () => context.push('${RouteNames.tasksListFull}?status=4')),
                       AppSpacing.gapSm,
-                      _buildLegendItem('متعثرة', stalled, isDark ? NeuColors.navyLight : NeuColors.navyMid, isDark),
+                      _buildLegendItem(context, 'متعثرة', stalled, isDark ? NeuColors.navyLight : NeuColors.navyMid, isDark, () => context.push('${RouteNames.tasksListFull}?status=5')),
                     ],
                   ),
                 ),
@@ -712,39 +666,43 @@ class TaskDistributionChart extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(String label, int count, Color color, bool isDark) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        AppSpacing.gapHSm,
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Tajawal',
-              color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
-              fontWeight: FontWeight.w500,
+  Widget _buildLegendItem(BuildContext context, String label, int count, Color color, bool isDark, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
             ),
           ),
-        ),
-        Text(
-          '$count',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'IBMPlexSansArabic',
-            color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary,
+          AppSpacing.gapHSm,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Tajawal',
+                color: isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-        ),
-      ],
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'IBMPlexSansArabic',
+              color: isDark ? NeuColors.textPrimaryDark : NeuColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

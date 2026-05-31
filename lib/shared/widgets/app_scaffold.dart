@@ -21,6 +21,7 @@ class AppShellScaffold extends StatelessWidget {
   static const _navItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'الرئيسية', path: RouteNames.dashboardFull),
     _NavItem(icon: Icons.groups_rounded, label: 'الاجتماعات', path: RouteNames.meetingsListFull),
+    _NavItem(icon: Icons.task_alt_rounded, label: 'المهام', path: RouteNames.tasksListFull),
     _NavItem(icon: Icons.replay_rounded, label: 'المتابعات', path: RouteNames.followupsListFull),
     _NavItem(icon: Icons.archive_rounded, label: 'أرشيف المذكرات', path: RouteNames.archiveListFull),
   ];
@@ -30,27 +31,36 @@ class AppShellScaffold extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentPath = GoRouterState.of(context).uri.path;
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: NeuDecorations.neuFlat(
-          radius: 0,
-          isDark: isDark,
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _navItems.map((item) {
-                final isSelected = currentPath == item.path;
-                return _buildNavItem(
-                  context,
-                  item: item,
-                  isSelected: isSelected,
-                  isDark: isDark,
-                );
-              }).toList(),
+    return PopScope(
+      canPop: currentPath == RouteNames.dashboardFull,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (currentPath != RouteNames.dashboardFull) {
+          context.go(RouteNames.dashboardFull);
+        }
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: Container(
+          decoration: NeuDecorations.neuFlat(
+            radius: 0,
+            isDark: isDark,
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: _navItems.map((item) {
+                  final isSelected = currentPath == item.path;
+                  return _buildNavItem(
+                    context,
+                    item: item,
+                    isSelected: isSelected,
+                    isDark: isDark,
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ),

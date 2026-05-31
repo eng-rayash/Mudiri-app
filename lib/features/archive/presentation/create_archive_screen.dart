@@ -23,6 +23,7 @@ import '../domain/archive_repository.dart';
 import '../providers/archive_categories_provider.dart';
 import '../../../core/services/document_scanner_service.dart';
 import '../../../core/database/providers/database_providers.dart';
+import '../../../core/security/secure_storage_service.dart';
 
 /// Professional Executive screen for creating a new official Memo.
 /// Includes camera scanner, auto Hijri/Gregorian date formatting,
@@ -151,8 +152,20 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
   // --- Image Pickers & Filters ---
   Future<File?> _showFilterDialog(File croppedFile) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    DocumentFilter selectedFilter = DocumentFilter.documentBW;
     final scannerService = DocumentScannerService();
+    
+    // Asynchronously load the last used filter from secure storage
+    final savedFilterName = await SecureStorageService.instance.read('last_used_filter');
+    DocumentFilter selectedFilter = DocumentFilter.fidelityColor;
+    if (savedFilterName != null) {
+      selectedFilter = DocumentFilter.values.firstWhere(
+        (f) => f.name == savedFilterName,
+        orElse: () => DocumentFilter.fidelityColor,
+      );
+    }
+    double filterIntensity = 1.0;
+    
+    if (!mounted) return null;
     
     return await showModalBottomSheet<File>(
       context: context,
@@ -179,7 +192,7 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                   Expanded(
                     child: Center(
                       child: FutureBuilder<File?>(
-                        future: scannerService.applyFilter(croppedFile, selectedFilter),
+                        future: scannerService.applyFilter(croppedFile, selectedFilter, filterIntensity),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const CircularProgressIndicator(color: NeuColors.navyMid);
@@ -199,52 +212,111 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                     ),
                   ),
                   AppSpacing.gapLg,
+                  
+                  // Intensity Slider Block
+                  if (selectedFilter != DocumentFilter.original) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Text(
+                            'شدة الفلتر: ',
+                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '${(filterIntensity * 100).round()}%',
+                            style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+                              color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          inactiveTrackColor: isDark ? NeuColors.dividerDark : NeuColors.divider,
+                          thumbColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                          overlayColor: (isDark ? NeuColors.goldAccent : NeuColors.navyDeep).withValues(alpha: 0.12),
+                          valueIndicatorColor: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                        ),
+                        child: Slider(
+                          value: filterIntensity,
+                          min: 0.0,
+                          max: 1.0,
+                          onChanged: (value) {
+                            setModalState(() {
+                              filterIntensity = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    AppSpacing.gapMd,
+                  ],
+
                   Text(
-                    'اختر الفلتر المناسب لوضوح الورقة (مثل CamScanner):',
+                    'اختر الفلتر المناسب لوضوح الورقة:',
                     style: isDark ? AppTypography.captionDark : AppTypography.caption,
                     textAlign: TextAlign.center,
                   ),
                   AppSpacing.gapSm,
+                  
+                  // Clean, symmetric vertical scroll list of filter rows
                   SizedBox(
-                    height: 90,
+                    height: 140,
                     child: ListView(
-                      scrollDirection: Axis.horizontal,
+                      physics: const ClampingScrollPhysics(),
                       children: DocumentFilter.values.map((filter) {
                         final isSelected = filter == selectedFilter;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 2.0),
                           child: GestureDetector(
                             onTap: () {
                               setModalState(() {
                                 selectedFilter = filter;
                               });
                             },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: isSelected
-                                      ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
-                                      : NeuDecorations.neuFlat(radius: 12, isDark: isDark),
-                                  child: Icon(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: isSelected
+                                  ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+                                  : NeuDecorations.neuFlatSoft(radius: 12, isDark: isDark),
+                              child: Row(
+                                children: [
+                                  Icon(
                                     filter.icon,
                                     color: isSelected
                                         ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
                                         : (isDark ? NeuColors.textSecondaryDark : NeuColors.textSecondary),
-                                    size: 28,
+                                    size: 20,
                                   ),
-                                ),
-                                AppSpacing.gapXs,
-                                Text(
-                                  filter.arabicLabel,
-                                  style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    fontSize: 11,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      filter.arabicLabel,
+                                      style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        fontSize: 12,
+                                        color: isSelected
+                                            ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                                            : null,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  if (isSelected)
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                                      size: 18,
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -270,7 +342,9 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            final resultFile = await scannerService.applyFilter(croppedFile, selectedFilter);
+                            // Persist the chosen filter for the next launch
+                            await SecureStorageService.instance.write('last_used_filter', selectedFilter.name);
+                            final resultFile = await scannerService.applyFilter(croppedFile, selectedFilter, filterIntensity);
                             if (context.mounted) {
                               Navigator.pop(context, resultFile);
                             }
@@ -1031,36 +1105,41 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.lock_rounded,
-                            color: _isConfidential
-                                ? NeuColors.priorityCritical
-                                : NeuColors.textHint,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'مذكرة سريّة للغاية',
-                                style:
-                                    (isDark
-                                            ? AppTypography.bodyDark
-                                            : AppTypography.body)
-                                        .copyWith(fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lock_rounded,
+                              color: _isConfidential
+                                  ? NeuColors.priorityCritical
+                                  : NeuColors.textHint,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'مذكرة سريّة للغاية',
+                                    style:
+                                        (isDark
+                                                ? AppTypography.bodyDark
+                                                : AppTypography.body)
+                                            .copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'الوصول لهذه المذكرة سيتطلب تسجيل الدخول وسيقيد المعاينة',
+                                    style: isDark
+                                        ? AppTypography.captionDark
+                                        : AppTypography.caption,
+                                  ),
+                                ],
                               ),
-                              Text(
-                                'الوصول لهذه المذكرة سيتطلب تسجيل الدخول وسيقيد المعاينة',
-                                style: isDark
-                                    ? AppTypography.captionDark
-                                    : AppTypography.caption,
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Switch.adaptive(
                         value: _isConfidential,
                         onChanged: (val) =>

@@ -65,6 +65,8 @@ class _AppointmentsListScreenState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final appointmentsAsync = ref.watch(appointmentsListProvider);
+    final filterParam = GoRouterState.of(context).uri.queryParameters['filter'];
+    final isTodayFilter = filterParam == 'today';
 
     return Scaffold(
       backgroundColor:
@@ -86,12 +88,20 @@ class _AppointmentsListScreenState
                 onPressed: () => setState(() => _selectedIds.clear()),
               ),
         title: _selectedIds.isEmpty
-            ? Text('المواعيد',
+            ? Text(isTodayFilter ? 'مواعيد اليوم' : 'المواعيد',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3)
             : Text('تم تحديد ${_selectedIds.length}',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3),
         actions: _selectedIds.isEmpty
             ? [
+                if (isTodayFilter)
+                  IconButton(
+                    icon: Icon(
+                      Icons.filter_alt_off_rounded,
+                      color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                    ),
+                    onPressed: () => context.go(RouteNames.appointmentsList),
+                  ),
                 SortMenu(
                   options: _sortOptions,
                   selectedIndex: _selectedSortIndex,
@@ -106,6 +116,10 @@ class _AppointmentsListScreenState
                   error: (_, _) => const SizedBox(),
                   data: (appointments) {
                     var filtered = appointments.toList();
+                    if (isTodayFilter) {
+                      final todayStr = DateTime.now().toIso8601String().split('T').first;
+                      filtered = filtered.where((a) => a.date == todayStr).toList();
+                    }
                     if (_searchQuery.isNotEmpty) {
                       final q = _searchQuery.toLowerCase();
                       filtered = filtered.where((a) {
@@ -211,6 +225,11 @@ class _AppointmentsListScreenState
                 data: (appointments) {
                   var filtered = appointments.toList();
 
+                  if (isTodayFilter) {
+                    final todayStr = DateTime.now().toIso8601String().split('T').first;
+                    filtered = filtered.where((a) => a.date == todayStr).toList();
+                  }
+
                   if (_searchQuery.isNotEmpty) {
                     final q = _searchQuery.toLowerCase();
                     filtered = filtered.where((a) {
@@ -308,7 +327,7 @@ class _AppointmentsListScreenState
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${appointment.durationMinutes} دقيقة',
+                                      _formatDuration(appointment.durationMinutes),
                                       style: isDark
                                           ? AppTypography
                                               .captionDark
@@ -578,6 +597,42 @@ class _AppointmentsListScreenState
           ),
         );
       }
+    }
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes <= 0) return 'غير محدد';
+    final hours = minutes ~/ 60;
+    final remainingMins = minutes % 60;
+    
+    String hoursStr = '';
+    if (hours == 1) {
+      hoursStr = 'ساعة';
+    } else if (hours == 2) {
+      hoursStr = 'ساعتان';
+    } else if (hours > 2 && hours <= 10) {
+      hoursStr = '$hours ساعات';
+    } else if (hours > 10) {
+      hoursStr = '$hours ساعة';
+    }
+    
+    String minsStr = '';
+    if (remainingMins == 1) {
+      minsStr = 'دقيقة واحدة';
+    } else if (remainingMins == 2) {
+      minsStr = 'دقيقتان';
+    } else if (remainingMins > 2 && remainingMins <= 10) {
+      minsStr = '$remainingMins دقائق';
+    } else if (remainingMins > 10) {
+      minsStr = '$remainingMins دقيقة';
+    }
+    
+    if (hours > 0 && remainingMins > 0) {
+      return '$hoursStr و $minsStr';
+    } else if (hours > 0) {
+      return hoursStr;
+    } else {
+      return minsStr;
     }
   }
 }

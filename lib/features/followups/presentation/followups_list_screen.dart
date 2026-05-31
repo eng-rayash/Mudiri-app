@@ -648,45 +648,9 @@ class _FollowupsListScreenState extends ConsumerState<FollowupsListScreen> {
                       selectedIndex: _selectedSortIndex,
                       onSelected: (index) => setState(() => _selectedSortIndex = index),
                     ),
-                    ExportButton(
-                      itemCount: filteredDocs.length,
-                      onExport: (format) async {
-                        final exportService = ref.read(exportServiceProvider);
-                        await exportService.exportDataList<FollowUp>(
-                          context: context,
-                          title: 'متابعات الإدارة التنفيذية',
-                          items: filteredDocs,
-                          headers: [
-                            'م',
-                            'الموضوع',
-                            'النوع المرتبط',
-                            'الجهة المسؤولة',
-                            'تاريخ الاستحقاق',
-                            'الأولوية',
-                            'الحالة',
-                            'الملاحظات'
-                          ],
-                          itemMapper: (list) => List.generate(list.length, (idx) {
-                            final f = list[idx];
-                            return [
-                              '${idx + 1}',
-                              f.title,
-                              FollowUpEntityType.fromValue(f.entityType).arabicLabel,
-                              f.assignedTo ?? 'غير محدد',
-                              f.targetDate ?? 'غير محدد',
-                              Priority.fromValue(f.priority).arabicLabel,
-                              UnifiedStatus.fromValue(f.status).arabicLabel,
-                              f.notes ?? '',
-                            ];
-                          }),
-                          format: format,
-                        );
-                      },
-                    ),
                   ],
                 );
-              }
- else {
+              } else {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

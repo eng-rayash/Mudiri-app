@@ -40,7 +40,7 @@ class DirectiveDetailPage extends ConsumerWidget {
             Icons.arrow_back_rounded,
             color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go(RouteNames.directivesList),
         ),
         actions: [
           PopupMenuButton<String>(

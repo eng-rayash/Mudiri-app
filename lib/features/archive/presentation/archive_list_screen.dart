@@ -356,43 +356,6 @@ class _ArchiveListScreenState extends ConsumerState<ArchiveListScreen> {
                       selectedIndex: _selectedSortIndex,
                       onSelected: (index) => setState(() => _selectedSortIndex = index),
                     ),
-                    ExportButton(
-                      itemCount: filteredDocs.length,
-                      onExport: (format) async {
-                        final exportService = ref.read(exportServiceProvider);
-                        await exportService.exportDataList<ArchiveData>(
-                          context: context,
-                          title: 'أرشيف المذكرات الرسمية',
-                          items: filteredDocs,
-                          headers: [
-                            'م',
-                            'الموضوع',
-                            'النوع',
-                            'الرقم المرجعي',
-                            'التاريخ الميلادي',
-                            'التاريخ الهجري',
-                            'الجهة الموجهة إليها',
-                            'الملاحظات',
-                            'سرية للغاية'
-                          ],
-                          itemMapper: (list) => List.generate(list.length, (idx) {
-                            final doc = list[idx];
-                            return [
-                              '${idx + 1}',
-                              doc.title,
-                              doc.category ?? '',
-                              doc.referenceNumber ?? '',
-                              doc.documentDate ?? '',
-                              doc.hijriDate ?? '',
-                              doc.directedEntity ?? '',
-                              doc.notes ?? '',
-                              doc.isConfidential ? 'نعم' : 'لا',
-                            ];
-                          }),
-                          format: format,
-                        );
-                      },
-                    ),
                   ],
                 );
               } else {

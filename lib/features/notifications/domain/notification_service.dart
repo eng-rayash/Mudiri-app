@@ -15,7 +15,7 @@ class NotificationService {
       tz.initializeTimeZones();
       
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@mipmap/launcher_icon');
 
       const InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
@@ -28,8 +28,85 @@ class NotificationService {
         },
       );
       _initialized = true;
+      
+      // Auto schedule staggered alerts
+      await scheduleStaggeredAlerts();
     } catch (e) {
       debugPrint('NotificationService.init error: $e');
+    }
+  }
+
+  Future<void> scheduleStaggeredAlerts() async {
+    if (!_initialized) await init();
+
+    try {
+      // 1. Morning Review (08:00 AM)
+      final now = DateTime.now();
+      var morning = DateTime(now.year, now.month, now.day, 8, 0);
+      if (morning.isBefore(now)) morning = morning.add(const Duration(days: 1));
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id: 800,
+        title: 'تخطيط اليوم التنفيذي ☀️',
+        body: 'سعادة المدير، ابدأ يومك بالاطلاع على قائمة الاجتماعات والمهام اليومية المجدولة.',
+        scheduledDate: tz.TZDateTime.from(morning, tz.local),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'mudiri_staggered',
+            'Mudiri Daily Staggered Alert',
+            channelDescription: 'التنبيهات الإدارية المتفاوتة اليومية',
+            importance: Importance.high,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+
+      // 2. Midday Follow-up (02:00 PM)
+      var midday = DateTime(now.year, now.month, now.day, 14, 0);
+      if (midday.isBefore(now)) midday = midday.add(const Duration(days: 1));
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id: 801,
+        title: 'متابعة الإنجاز والمصفوفة 📊',
+        body: 'الوقوف على نسب إنجاز المهام والمتابعات المعلقة لضمان سير العمل بكفاءة.',
+        scheduledDate: tz.TZDateTime.from(midday, tz.local),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'mudiri_staggered',
+            'Mudiri Daily Staggered Alert',
+            channelDescription: 'التنبيهات الإدارية المتفاوتة اليومية',
+            importance: Importance.high,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+
+      // 3. Evening Review (08:00 PM)
+      var evening = DateTime(now.year, now.month, now.day, 20, 0);
+      if (evening.isBefore(now)) evening = evening.add(const Duration(days: 1));
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id: 802,
+        title: 'ملخص اليوم والإنجاز 🌙',
+        body: 'مراجعة سريعة لما تم إنجازه اليوم وتجهيز الأولويات لصباح الغد المشرق.',
+        scheduledDate: tz.TZDateTime.from(evening, tz.local),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'mudiri_staggered',
+            'Mudiri Daily Staggered Alert',
+            channelDescription: 'التنبيهات الإدارية المتفاوتة اليومية',
+            importance: Importance.high,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      
+      debugPrint('Staggered notifications scheduled successfully.');
+    } catch (e) {
+      debugPrint('NotificationService.scheduleStaggeredAlerts error: $e');
     }
   }
 

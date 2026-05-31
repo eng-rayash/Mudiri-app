@@ -73,10 +73,18 @@ class _TasksListScreenState
     });
   }
 
+  bool _initializedStatusFromRoute = false;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tasksState = ref.watch(tasksListProvider);
+
+    final statusParam = GoRouterState.of(context).uri.queryParameters['status'];
+    if (!_initializedStatusFromRoute && statusParam != null) {
+      _statusFilter = statusParam;
+      _initializedStatusFromRoute = true;
+    }
 
     return Scaffold(
       backgroundColor:

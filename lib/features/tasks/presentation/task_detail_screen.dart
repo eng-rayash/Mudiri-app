@@ -33,7 +33,7 @@ class TaskDetailScreen extends ConsumerWidget {
             Icons.arrow_back_rounded,
             color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go(RouteNames.tasksListFull),
         ),
         title: Text(
           'تفاصيل المهمة',
@@ -135,23 +135,125 @@ class TaskDetailScreen extends ConsumerWidget {
                   AppSpacing.gapMd,
                 ],
                 
-                if (status != UnifiedStatus.completed)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24.0),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: NeuColors.success,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                // Status Selector Block
+                NeuCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تحديث حالة المهمة',
+                        style: isDark ? AppTypography.h4Dark : AppTypography.h4,
                       ),
-                      onPressed: () {
-                        ref.read(tasksRepositoryProvider).updateStatus(taskId, UnifiedStatus.completed);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنجاز المهمة')));
-                      },
-                      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-                      label: const Text('تحديد كمكتمل', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
+                      AppSpacing.gapSm,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: UnifiedStatus.values.map((statusVal) {
+                            final isSelected = statusVal.value == task.status;
+                            final color = switch (statusVal) {
+                              UnifiedStatus.newItem => NeuColors.info,
+                              UnifiedStatus.inProgress => NeuColors.warning,
+                              UnifiedStatus.awaitingResponse => NeuColors.warning,
+                              UnifiedStatus.completed => NeuColors.success,
+                              UnifiedStatus.overdue => NeuColors.danger,
+                              UnifiedStatus.stalled => isDark ? NeuColors.navyLight : NeuColors.navyMid,
+                              UnifiedStatus.cancelled => NeuColors.danger,
+                            };
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: GestureDetector(
+                                onTap: () async {
+                                  if (isSelected) return;
+                                  try {
+                                    await ref
+                                        .read(tasksRepositoryProvider)
+                                        .updateStatus(taskId, statusVal);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'تم تحديث الحالة إلى: ${statusVal.arabicLabel}',
+                                            textDirection: TextDirection.rtl,
+                                          ),
+                                          backgroundColor: NeuColors.success,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('حدث خطأ: $e'),
+                                          backgroundColor: NeuColors.danger,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? color.withAlpha(isDark ? 35 : 25)
+                                        : (isDark
+                                            ? NeuColors.surfaceDark
+                                            : NeuColors.surface),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? color
+                                          : (isDark
+                                              ? NeuColors.dividerDark
+                                              : NeuColors.divider),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? []
+                                        : [
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? NeuColors.shadowDarkDark
+                                                  : NeuColors.shadowDark,
+                                              offset: const Offset(2, 2),
+                                              blurRadius: 4,
+                                            ),
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? NeuColors.shadowLightDark
+                                                  : NeuColors.shadowLight,
+                                              offset: const Offset(-2, -2),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Text(
+                                    statusVal.arabicLabel,
+                                    style: (isDark
+                                            ? AppTypography.bodySmallDark
+                                            : AppTypography.bodySmall)
+                                        .copyWith(
+                                      color: isSelected
+                                          ? color
+                                          : (isDark
+                                              ? NeuColors.textSecondaryDark
+                                              : NeuColors.textSecondary),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
               ],
             );
           },

@@ -79,9 +79,14 @@ class _NeuButtonState extends State<NeuButton> {
           Icon(widget.icon, color: textColor, size: 20),
           AppSpacing.gapHSm,
         ],
-        Text(
-          widget.label,
-          style: AppTypography.button.copyWith(color: textColor),
+        Flexible(
+          child: Text(
+            widget.label,
+            style: AppTypography.button.copyWith(color: textColor),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+          ),
         ),
       ],
     );

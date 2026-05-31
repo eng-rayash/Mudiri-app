@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/database/providers/database_providers.dart';
+import '../../../core/theme/neu_decorations.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/security/auth_service.dart';
@@ -107,7 +109,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Icons.arrow_back_rounded,
             color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go(RouteNames.dashboardFull),
         ),
       ),
       body: Directionality(
@@ -146,7 +148,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icons.history_rounded,
                 title: 'سجل الأنشطة الأمنية',
                 subtitle: 'عرض سجل تسجيلات الدخول',
-                onTap: () {},
+                onTap: () => context.push(RouteNames.securityLog),
               ),
 
               AppSpacing.gapXxl,
@@ -336,7 +338,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'عن التطبيق', Icons.info_rounded, isDark),
               AppSpacing.gapMd,
 
-              NeuCard(
+              Container(
+                decoration: NeuDecorations.neuFlat(isDark: isDark).copyWith(
+                  border: Border.all(
+                    color: isDark ? NeuColors.goldAccent : NeuColors.goldAccent.withValues(alpha: 0.6),
+                    width: 2.0,
+                  ),
+                ),
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
@@ -379,6 +387,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: isDark
                           ? AppTypography.captionDark
                           : AppTypography.caption,
+                    ),
+                    AppSpacing.gapMd,
+                    Divider(
+                      color: isDark ? NeuColors.goldAccent.withValues(alpha: 0.3) : NeuColors.navyDeep.withValues(alpha: 0.15),
+                      thickness: 1,
+                    ),
+                    AppSpacing.gapMd,
+                    Text(
+                      'تطوير المهندس: Eng: Rayash Albureihi',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -609,13 +633,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: NeuColors.danger,
               ),
               onPressed: () async {
+                final db = ref.read(databaseProvider);
+                await db.transaction(() async {
+                  await db.delete(db.users).go();
+                  await db.delete(db.meetings).go();
+                  await db.delete(db.tasks).go();
+                  await db.delete(db.followUps).go();
+                  await db.delete(db.directives).go();
+                  await db.delete(db.contacts).go();
+                  await db.delete(db.appointments).go();
+                  await db.delete(db.archive).go();
+                  await db.delete(db.securityLogs).go();
+                  await db.delete(db.appSettings).go();
+                  await db.delete(db.calls).go();
+                  await db.delete(db.visitors).go();
+                  await db.delete(db.notes).go();
+                  await db.delete(db.movements).go();
+                });
                 await SecureStorageService.instance.deleteAll();
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content:
-                          Text('تم حذف جميع البيانات. أعد تشغيل التطبيق.'),
+                          Text('تم حذف جميع البيانات بنجاح. أعد تشغيل التطبيق.'),
                     ),
                   );
                 }

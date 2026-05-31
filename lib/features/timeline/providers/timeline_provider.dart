@@ -30,101 +30,120 @@ class TimelineEvent {
 final timelineProvider = Provider<List<TimelineEvent>>((ref) {
   final events = <TimelineEvent>[];
 
+  final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
   String formatTimestamp(int ms) {
     final dt = DateTime.fromMillisecondsSinceEpoch(ms);
     return DateFormat('HH:mm').format(dt);
   }
 
-  // 1. Meetings (الاجتماعات)
+  // 1. Meetings (الاجتماعات) - already filtered today in todayMeetingsProvider
   final meetings = ref.watch(todayMeetingsProvider).valueOrNull ?? [];
   for (final m in meetings) {
-    events.add(TimelineEvent(
-      id: m.id,
-      title: m.title,
-      time: m.time,
-      type: 'meeting',
-      isCompleted: m.status == 2, // 2: Completed
-    ));
+    if (m.date == todayStr) {
+      events.add(TimelineEvent(
+        id: m.id,
+        title: m.title,
+        time: m.time,
+        type: 'meeting',
+        isCompleted: m.status == 2, // 2: Completed
+      ));
+    }
   }
 
   // 2. Visitors (اللقاءات / الزوار)
   final visitors = ref.watch(activeVisitorsProvider).valueOrNull ?? [];
   for (final v in visitors) {
-    events.add(TimelineEvent(
-      id: v.id,
-      title: 'لقاء مع: ${v.visitorName}',
-      time: v.entryTime ?? formatTimestamp(v.createdAt),
-      type: 'visitor',
-      isCompleted: v.status == 2, // 2: Left
-    ));
+    final vDate = DateFormat('yyyy-MM-dd').format(DateTime.fromMillisecondsSinceEpoch(v.createdAt));
+    if (vDate == todayStr) {
+      events.add(TimelineEvent(
+        id: v.id,
+        title: 'لقاء مع: ${v.visitorName}',
+        time: v.entryTime ?? formatTimestamp(v.createdAt),
+        type: 'visitor',
+        isCompleted: v.status == 2, // 2: Left
+      ));
+    }
   }
 
   // 3. Movements (التحركات)
   final movements = ref.watch(activeMovementsProvider).valueOrNull ?? [];
   for (final m in movements) {
-    String typeStr = 'خروج';
-    if (m.type == 1) typeStr = 'عودة';
-    if (m.type == 2) typeStr = 'مهمة خارجية';
-    
-    events.add(TimelineEvent(
-      id: m.id,
-      title: '$typeStr إلى: ${m.destination}',
-      time: m.time,
-      type: 'movement',
-      isCompleted: false,
-    ));
+    if (m.date == todayStr) {
+      String typeStr = 'خروج';
+      if (m.type == 1) typeStr = 'عودة';
+      if (m.type == 2) typeStr = 'مهمة خارجية';
+      
+      events.add(TimelineEvent(
+        id: m.id,
+        title: '$typeStr إلى: ${m.destination}',
+        time: m.time,
+        type: 'movement',
+        isCompleted: false,
+      ));
+    }
   }
 
   // 4. Appointments (المواعيد)
   final appointments = ref.watch(appointmentsListProvider).valueOrNull ?? [];
   for (final a in appointments) {
-    events.add(TimelineEvent(
-      id: a.id,
-      title: 'موعد: ${a.title}',
-      time: a.time,
-      type: 'appointment',
-      isCompleted: false,
-    ));
+    if (a.date == todayStr) {
+      events.add(TimelineEvent(
+        id: a.id,
+        title: 'موعد: ${a.title}',
+        time: a.time,
+        type: 'appointment',
+        isCompleted: false,
+      ));
+    }
   }
 
   // 5. Tasks (المهام)
   final tasks = ref.watch(tasksListProvider).valueOrNull ?? [];
   for (final t in tasks) {
-    events.add(TimelineEvent(
-      id: t.id,
-      title: 'مهمة: ${t.title}',
-      time: formatTimestamp(t.createdAt),
-      type: 'task',
-      isCompleted: t.status == 3, // 3: Completed (UnifiedStatus)
-    ));
+    final tDate = DateFormat('yyyy-MM-dd').format(DateTime.fromMillisecondsSinceEpoch(t.createdAt));
+    if (tDate == todayStr) {
+      events.add(TimelineEvent(
+        id: t.id,
+        title: 'مهمة: ${t.title}',
+        time: formatTimestamp(t.createdAt),
+        type: 'task',
+        isCompleted: t.status == 3, // 3: Completed (UnifiedStatus)
+      ));
+    }
   }
 
   // 6. Calls (المكالمات)
   final calls = ref.watch(callsListProvider).valueOrNull ?? [];
   for (final c in calls) {
-    events.add(TimelineEvent(
-      id: c.id,
-      title: 'مكالمة: ${c.callerName}',
-      time: c.time,
-      type: 'call',
-      isCompleted: true,
-    ));
+    if (c.date == todayStr) {
+      events.add(TimelineEvent(
+        id: c.id,
+        title: 'مكالمة: ${c.callerName}',
+        time: c.time,
+        type: 'call',
+        isCompleted: true,
+      ));
+    }
   }
 
   // 7. Directives (التوجيهات)
   final directives = ref.watch(directivesListProvider).valueOrNull ?? [];
   for (final d in directives) {
-    events.add(TimelineEvent(
-      id: d.id,
-      title: 'توجيه: ${d.title}',
-      time: formatTimestamp(d.createdAt),
-      type: 'directive',
-      isCompleted: d.status == 3, // 3: Completed (UnifiedStatus)
-    ));
+    final dDate = DateFormat('yyyy-MM-dd').format(DateTime.fromMillisecondsSinceEpoch(d.createdAt));
+    if (dDate == todayStr) {
+      events.add(TimelineEvent(
+        id: d.id,
+        title: 'توجيه: ${d.title}',
+        time: formatTimestamp(d.createdAt),
+        type: 'directive',
+        isCompleted: d.status == 3, // 3: Completed (UnifiedStatus)
+      ));
+    }
   }
 
-  // Sort events by time reverse-chronologically (descending)
-  events.sort((a, b) => b.time.compareTo(a.time));
+  // Sort events by time chronologically (ascending: earliest first)
+  events.sort((a, b) => a.time.compareTo(b.time));
 
   return events;
 });

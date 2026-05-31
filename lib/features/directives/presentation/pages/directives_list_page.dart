@@ -80,6 +80,8 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final directivesAsync = ref.watch(directivesListProvider);
+    final filterParam = GoRouterState.of(context).uri.queryParameters['filter'];
+    final isCriticalFilter = filterParam == 'critical';
 
     return Scaffold(
       backgroundColor:
@@ -98,7 +100,7 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
               ),
         title: _selectedIds.isEmpty
             ? Text(
-                'التوجيهات الإدارية',
+                isCriticalFilter ? 'التوجيهات العاجلة' : 'التوجيهات الإدارية',
                 style: isDark ? AppTypography.h3Dark : AppTypography.h3,
               )
             : Text(
@@ -107,6 +109,14 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
               ),
         actions: _selectedIds.isEmpty
             ? [
+                if (isCriticalFilter)
+                  IconButton(
+                    icon: Icon(
+                      Icons.filter_alt_off_rounded,
+                      color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                    ),
+                    onPressed: () => context.go(RouteNames.directivesList),
+                  ),
                 SortMenu(
                   options: _sortOptions,
                   selectedIndex: _selectedSortIndex,
@@ -128,6 +138,9 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                   error: (_, _) => const SizedBox(),
                   data: (directives) {
                     var filtered = directives.toList();
+                    if (isCriticalFilter) {
+                      filtered = filtered.where((d) => d.priority == 0).toList();
+                    }
                     // Status filter
                     if (_statusFilter != 'all') {
                       final statusVal = int.tryParse(_statusFilter);
@@ -245,6 +258,10 @@ class _DirectivesListPageState extends ConsumerState<DirectivesListPage> {
                     Center(child: Text('خطأ: $err')),
                 data: (directives) {
                   var filtered = directives.toList();
+
+                  if (isCriticalFilter) {
+                    filtered = filtered.where((d) => d.priority == 0).toList();
+                  }
 
                   // Status filter
                   if (_statusFilter != 'all') {

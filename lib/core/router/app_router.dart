@@ -37,6 +37,7 @@ import '../../features/visitors/presentation/visitors_list_screen.dart';
 
 // Phase 5
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/settings/presentation/security_log_screen.dart';
 import '../../shared/widgets/app_scaffold.dart';
 import 'route_names.dart';
 
@@ -218,6 +219,10 @@ class AppRouter {
       GoRoute(
         path: RouteNames.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.securityLog,
+        builder: (context, state) => const SecurityLogScreen(),
       ),
 
       // ─── Follow-ups Routes (outside shell) ───

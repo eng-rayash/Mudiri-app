@@ -26,7 +26,8 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
-  final _durationController = TextEditingController(text: '30');
+  final _hoursController = TextEditingController(text: '0');
+  final _minutesController = TextEditingController(text: '30');
 
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -47,7 +48,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       setState(() {
         _titleController.text = appt.title;
         _locationController.text = appt.location ?? '';
-        _durationController.text = appt.durationMinutes.toString();
+        final totalMin = appt.durationMinutes;
+        _hoursController.text = (totalMin ~/ 60).toString();
+        _minutesController.text = (totalMin % 60).toString();
         _selectedDate = DateTime.tryParse(appt.date) ?? DateTime.now();
         final timeParts = appt.time.split(':');
         if (timeParts.length >= 2) {
@@ -64,7 +67,8 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
-    _durationController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
     super.dispose();
   }
 
@@ -95,7 +99,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     try {
       final repository = ref.read(appointmentsRepositoryProvider);
       final formattedTime = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
-      final duration = int.tryParse(_durationController.text) ?? 30;
+      final hrs = int.tryParse(_hoursController.text) ?? 0;
+      final mins = int.tryParse(_minutesController.text) ?? 0;
+      final duration = hrs * 60 + mins;
 
       if (widget.appointmentId != null) {
         await repository.updateAppointment(
@@ -209,18 +215,40 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
               ),
               AppSpacing.gapLg,
 
-              NeuInput(
-                controller: _durationController,
-                label: 'المدة (بالدقائق)',
-                hint: 'مثال: 30',
-                prefixIcon: Icons.timer_rounded,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty && int.tryParse(value) == null) {
-                    return 'أدخل رقماً صحيحاً';
-                  }
-                  return null;
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: NeuInput(
+                      controller: _hoursController,
+                      label: 'المدة (ساعات)',
+                      hint: 'مثال: 1',
+                      prefixIcon: Icons.hourglass_empty_rounded,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty && int.tryParse(value) == null) {
+                          return 'أدخل رقماً صحيحاً';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: NeuInput(
+                      controller: _minutesController,
+                      label: 'المدة (دقائق)',
+                      hint: 'مثال: 30',
+                      prefixIcon: Icons.timer_rounded,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty && int.tryParse(value) == null) {
+                          return 'أدخل رقماً صحيحاً';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
               ),
               AppSpacing.gapLg,
 

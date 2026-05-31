@@ -35,7 +35,7 @@ class MeetingDetailScreen extends ConsumerWidget {
             Icons.arrow_back_rounded,
             color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go(RouteNames.meetingsListFull),
         ),
         title: Text(
           'تفاصيل الاجتماع',
@@ -73,8 +73,6 @@ class MeetingDetailScreen extends ConsumerWidget {
               return Center(child: Text('الاجتماع غير موجود أو تم حذفه', style: isDark ? AppTypography.bodyDark : AppTypography.body));
             }
 
-            final status = MeetingStatus.fromValue(meeting.status);
-
             return ListView(
               padding: AppSpacing.screen,
               children: [
@@ -93,7 +91,7 @@ class MeetingDetailScreen extends ConsumerWidget {
                               style: isDark ? AppTypography.h3Dark : AppTypography.h3,
                             ),
                           ),
-                          _buildStatusBadge(status),
+                          StatusBadge.fromMeetingStatus(meeting.status),
                         ],
                       ),
                       AppSpacing.gapMd,
@@ -113,6 +111,125 @@ class MeetingDetailScreen extends ConsumerWidget {
                         Icons.location_on_outlined, 
                         'المكان', 
                         meeting.location?.isNotEmpty == true ? meeting.location! : 'غير محدد'
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapMd,
+
+                // Status Selector Block
+                NeuCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تحديث حالة الاجتماع',
+                        style: isDark ? AppTypography.h4Dark : AppTypography.h4,
+                      ),
+                      AppSpacing.gapSm,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: MeetingStatus.values.map((statusVal) {
+                            final isSelected = statusVal.value == meeting.status;
+                            final color = switch (statusVal) {
+                              MeetingStatus.scheduled => NeuColors.info,
+                              MeetingStatus.inProgress => NeuColors.warning,
+                              MeetingStatus.completed => NeuColors.success,
+                              MeetingStatus.postponed => NeuColors.warning,
+                              MeetingStatus.cancelled => NeuColors.danger,
+                            };
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: GestureDetector(
+                                onTap: () async {
+                                  if (isSelected) return;
+                                  try {
+                                    await ref
+                                        .read(meetingsRepositoryProvider)
+                                        .updateStatus(meetingId, statusVal);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'تم تحديث الحالة إلى: ${statusVal.arabicLabel}',
+                                            textDirection: TextDirection.rtl,
+                                          ),
+                                          backgroundColor: NeuColors.success,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('حدث خطأ: $e'),
+                                          backgroundColor: NeuColors.danger,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? color.withAlpha(isDark ? 35 : 25)
+                                        : (isDark
+                                            ? NeuColors.surfaceDark
+                                            : NeuColors.surface),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? color
+                                          : (isDark
+                                              ? NeuColors.dividerDark
+                                              : NeuColors.divider),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? []
+                                        : [
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? NeuColors.shadowDarkDark
+                                                  : NeuColors.shadowDark,
+                                              offset: const Offset(2, 2),
+                                              blurRadius: 4,
+                                            ),
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? NeuColors.shadowLightDark
+                                                  : NeuColors.shadowLight,
+                                              offset: const Offset(-2, -2),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Text(
+                                    statusVal.arabicLabel,
+                                    style: (isDark
+                                            ? AppTypography.bodySmallDark
+                                            : AppTypography.bodySmall)
+                                        .copyWith(
+                                      color: isSelected
+                                          ? color
+                                          : (isDark
+                                              ? NeuColors.textSecondaryDark
+                                              : NeuColors.textSecondary),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ],
                   ),
@@ -302,19 +419,6 @@ class MeetingDetailScreen extends ConsumerWidget {
         AppSpacing.gapMd,
       ],
     );
-  }
-
-  Widget _buildStatusBadge(MeetingStatus status) {
-    switch (status) {
-      case MeetingStatus.scheduled:
-        return StatusBadge.scheduled();
-      case MeetingStatus.completed:
-        return StatusBadge.completed();
-      case MeetingStatus.cancelled:
-        return StatusBadge.cancelled();
-      default:
-        return StatusBadge.scheduled();
-    }
   }
 
   Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
