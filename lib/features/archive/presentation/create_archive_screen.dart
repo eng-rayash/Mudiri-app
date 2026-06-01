@@ -829,23 +829,29 @@ class _CreateArchiveScreenState extends ConsumerState<CreateArchiveScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.document_scanner_rounded,
-                                color: NeuColors.navyMid,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'مرفقات المذكرة (PDF ممسوح ضوئياً)',
-                                style:
-                                    (isDark
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.document_scanner_rounded,
+                                  color: NeuColors.navyMid,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'مرفقات المذكرة (PDF ممسوح ضوئياً)',
+                                    style: (isDark
                                             ? AppTypography.bodyDark
                                             : AppTypography.body)
                                         .copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           if (_capturedImages.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(

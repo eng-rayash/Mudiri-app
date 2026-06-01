@@ -16,6 +16,7 @@ import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/dashboard_fab.dart';
 import '../../notifications/domain/notification_service.dart';
+import '../../notifications/providers/smart_notifications_provider.dart';
 import '../../../core/security/secure_storage_service.dart';
 
 /// Dashboard Screen — executive command center.
@@ -86,6 +87,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final analytics = ref.watch(reportsAnalyticsProvider);
     final events = ref.watch(timelineProvider);
     final displayedEvents = events.take(5).toList();
+
+    // Activate and synchronize smart dynamic reminders
+    ref.watch(smartNotificationsSchedulerProvider);
 
     return Scaffold(
       backgroundColor: isDark ? NeuColors.bgColorDark : NeuColors.bgColor,

@@ -74,37 +74,42 @@ class AppShellScaffold extends StatelessWidget {
     required bool isSelected,
     required bool isDark,
   }) {
-    return GestureDetector(
-      onTap: () => context.go(item.path),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: NeuDecorations.pressDuration,
-        curve: NeuDecorations.pressCurve,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: isSelected
-            ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              item.icon,
-              size: 24,
-              color: isSelected
-                  ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
-                  : NeuColors.textHint,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: AppTypography.navLabel.copyWith(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => context.go(item.path),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: NeuDecorations.pressDuration,
+          curve: NeuDecorations.pressCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: isSelected
+              ? NeuDecorations.neuPressed(radius: 12, isDark: isDark)
+              : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                item.icon,
+                size: 22,
                 color: isSelected
                     ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
                     : NeuColors.textHint,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.label,
+                  style: AppTypography.navLabel.copyWith(
+                    color: isSelected
+                        ? (isDark ? NeuColors.goldAccent : NeuColors.navyDeep)
+                        : NeuColors.textHint,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
