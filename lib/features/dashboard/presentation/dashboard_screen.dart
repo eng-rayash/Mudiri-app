@@ -13,6 +13,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
 import '../../../shared/widgets/neu_card.dart';
+import '../../../shared/widgets/neu_button.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/dashboard_fab.dart';
 import '../../notifications/domain/notification_service.dart';
@@ -36,6 +37,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowGreeting();
+      _checkMonthlyUpdate();
     });
   }
 
@@ -69,6 +71,103 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     } catch (e) {
       debugPrint('Error triggering daily greeting: $e');
     }
+  }
+
+  Future<void> _checkMonthlyUpdate() async {
+    try {
+      final storage = SecureStorageService.instance;
+      final lastCheckStr = await storage.read('last_update_check_date');
+      final now = DateTime.now();
+      final todayStr = now.toIso8601String().split('T').first;
+
+      if (lastCheckStr != null) {
+        final lastCheck = DateTime.tryParse(lastCheckStr);
+        if (lastCheck != null) {
+          final difference = now.difference(lastCheck).inDays;
+          if (difference >= 30) {
+            _showUpdateDialog();
+            await storage.write('last_update_check_date', todayStr);
+          }
+        } else {
+          await storage.write('last_update_check_date', todayStr);
+        }
+      } else {
+        // First launch setting: store today's date
+        await storage.write('last_update_check_date', todayStr);
+      }
+    } catch (e) {
+      debugPrint('Error checking monthly update: $e');
+    }
+  }
+
+  void _showUpdateDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.system_update_rounded,
+                    color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'تحديث التطبيق متاح',
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'يتوفر إصدار جديد من تطبيق "مديري". يرجى التحديث لضمان الحصول على أحدث الميزات وتحسينات الأمان والأداء.',
+                    style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('يتم الآن تحويلك إلى صفحة التحديث...', textDirection: TextDirection.rtl),
+                                backgroundColor: NeuColors.navyDeep,
+                              ),
+                            );
+                          },
+                          label: 'تحديث الآن',
+                          variant: NeuButtonVariant.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: NeuButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          label: 'تذكيري لاحقاً',
+                          variant: NeuButtonVariant.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

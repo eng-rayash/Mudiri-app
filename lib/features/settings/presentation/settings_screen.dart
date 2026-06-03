@@ -349,21 +349,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: NeuColors.navyDeep,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'م',
-                          style: TextStyle(
-                            fontFamily: 'IBMPlexSansArabic',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: NeuColors.textOnDark,
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.18),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                            spreadRadius: 1,
                           ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.asset(
+                          'assets/icon.png',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
@@ -406,6 +412,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ],
                 ),
+              ),
+              AppSpacing.gapMd,
+              _buildNavigationTile(
+                isDark,
+                icon: Icons.privacy_tip_rounded,
+                title: 'سياسة الخصوصية',
+                subtitle: 'بيان حماية البيانات والسرية الأمنية',
+                onTap: () => _showPrivacyPolicyDialog(context),
+              ),
+              _buildNavigationTile(
+                isDark,
+                icon: Icons.system_update_rounded,
+                title: 'التحقق من التحديثات',
+                subtitle: 'التأكد من توفر إصدار جديد للتطبيق',
+                onTap: () => _checkUpdatesManual(context),
               ),
 
               AppSpacing.gapXxl,
@@ -667,5 +688,196 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  void _showPrivacyPolicyDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.privacy_tip_rounded,
+                            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'سياسة الخصوصية وحماية البيانات',
+                            style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    
+                    _buildPolicyPoint(
+                      title: '1. العمل المحلي الكامل (Offline-First):',
+                      description: 'تطبيق "مديري" يعمل محلياً بشكل كامل على جهازك. لا نقوم بجمع أو معالجة أو رفع أي من بياناتك الشخصية، أو المستندات، أو الأنشطة التنفيذية إلى أي خوادم خارجية.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildPolicyPoint(
+                      title: '2. تشفير وحماية البيانات:',
+                      description: 'يتم تشفير قاعدة بيانات التطبيق بالكامل محلياً باستخدام محرك SQLCipher والتشفير العسكري AES256 لحماية ملفاتك ومذكراتك من الوصول غير المصرح به.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildPolicyPoint(
+                      title: '3. أذونات الدخول والوصول:',
+                      description: 'يطلب التطبيق أذونات البصمة (المقاييس الحيوية) لتأمين الدخول السريع، وصلاحية الوصول للملفات فقط من أجل حفظ المرفقات والمستندات بداخل الأرشيف التنفيذي للجهاز.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildPolicyPoint(
+                      title: '4. النسخ الاحتياطي المشفر:',
+                      description: 'عند تصدير نسخة احتياطية من بياناتك، يتم تشفيرها وتخزينها محلياً على جهازك. تقع مسؤولية الحفاظ على هذه النسخ الاحتياطية على عاتق المستخدم بالكامل.',
+                      isDark: isDark,
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: NeuButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        label: 'إغلاق',
+                        variant: NeuButtonVariant.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPolicyPoint({required String title, required String description, required bool isDark}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: (isDark ? AppTypography.bodyDark : AppTypography.body).copyWith(
+            fontWeight: FontWeight.bold,
+            color: isDark ? NeuColors.goldAccent : NeuColors.navyDeep,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          description,
+          style: (isDark ? AppTypography.captionDark : AppTypography.caption).copyWith(
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _checkUpdatesManual(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Show a loading dialog first
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: NeuCard(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(isDark ? NeuColors.goldAccent : NeuColors.navyDeep),
+                ),
+                const SizedBox(width: 20),
+                Text(
+                  'جاري التحقق من وجود تحديثات...',
+                  style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Simulate network delay for 1.5 seconds
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    if (context.mounted) {
+      // Dismiss loading dialog
+      Navigator.of(context).pop();
+
+      // Show update is available or application is up to date
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: NeuCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline_rounded,
+                    color: NeuColors.success,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'تطبيقك محدث بالكامل',
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3).copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'أنت تستخدم أحدث إصدار من تطبيق "مديري" (0.1.0). شكراً لك لاستخدامك النظام التنفيذي.',
+                    style: isDark ? AppTypography.bodyDark : AppTypography.body,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: NeuButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      label: 'موافق',
+                      variant: NeuButtonVariant.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

@@ -6,7 +6,6 @@ import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neu_colors.dart';
-import '../../../core/theme/neu_decorations.dart';
 import '../../../shared/widgets/neu_card.dart';
 import '../../../shared/widgets/search_filter_bar.dart';
 import '../../../shared/widgets/status_badge.dart';
@@ -448,16 +447,10 @@ class _MeetingsListScreenState
         ),
       ),
       floatingActionButton: _selectedIds.isEmpty
-          ? GestureDetector(
-              onTap: () => context.push(RouteNames.meetingCreate),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: NeuDecorations.neuFlat(
-                    radius: 50, isDark: isDark),
-                child: const Icon(Icons.add_rounded,
-                    color: NeuColors.goldAccent, size: 28),
-              ),
+          ? FloatingActionButton(
+              onPressed: () => context.push(RouteNames.meetingCreate),
+              backgroundColor: NeuColors.navyDeep,
+              child: const Icon(Icons.add_rounded, color: Colors.white),
             )
           : null,
     );

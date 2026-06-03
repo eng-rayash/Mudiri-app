@@ -114,13 +114,6 @@ class _TasksListScreenState
                   onSelected: (index) =>
                       setState(() => _selectedSortIndex = index),
                 ),
-                IconButton(
-                  icon: Icon(Icons.add_rounded,
-                      color: isDark
-                          ? NeuColors.goldAccent
-                          : NeuColors.navyDeep),
-                  onPressed: () => context.push(RouteNames.taskCreate),
-                ),
               ]
             : [
 
@@ -475,6 +468,13 @@ class _TasksListScreenState
           ],
         ),
       ),
+      floatingActionButton: _selectedIds.isEmpty
+          ? FloatingActionButton(
+              onPressed: () => context.push(RouteNames.taskCreate),
+              backgroundColor: NeuColors.navyDeep,
+              child: const Icon(Icons.add_rounded, color: Colors.white),
+            )
+          : null,
     );
   }
 

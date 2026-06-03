@@ -81,28 +81,32 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 // App Icon
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 110,
+                  height: 110,
                   decoration: BoxDecoration(
-                    color: NeuColors.bgColor,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(-4, -4),
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'م',
-                      style: TextStyle(
-                        fontFamily: AppTypography.fontFamilyHeading,
-                        fontSize: 48,
-                        fontWeight: FontWeight.w700,
-                        color: NeuColors.navyDeep,
-                      ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Image.asset(
+                      'assets/icon.png',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
